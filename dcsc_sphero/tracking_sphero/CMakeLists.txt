@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tracking)
+project(tracking_sphero)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -125,10 +125,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
-  src/mover.py
-  src/linear.py
-  src/tracking.py
-  src/tracking_alt.py
+  src/tracking_sphero.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

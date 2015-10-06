@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package>
+  <name>tracking</name>
+  <version>0.0.1</version>
+  <description>The tracking package</description>
+
+  <maintainer email="dcscm@todo.todo">dcscm</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>tf</build_depend>
+
+  <run_depend>rospy</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>tf</run_depend>
+
+  <export></export>
+</package>

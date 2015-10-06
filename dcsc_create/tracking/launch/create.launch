@@ -1,0 +1,7 @@
+<launch>
+
+	<group ns="create5">
+		<node pkg="create_node" name="create" type="turtlebot_node.py" />
+	</group>
+
+</launch>

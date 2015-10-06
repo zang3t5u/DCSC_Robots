@@ -1,0 +1,11 @@
+<launch>
+
+	<group>
+		<node pkg="sphero_node" name="sphero" type="sphero.py" />
+		<node pkg="tracking_sphero" name="tracker" type="tracking_sphero.py">
+			<param name="offset_x" value="0"/>
+   			<param name="offset_y" value="0"/>
+		</node>
+	</group>
+
+</launch>

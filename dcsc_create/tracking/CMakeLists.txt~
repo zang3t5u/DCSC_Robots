@@ -127,6 +127,7 @@ include_directories(
 install(PROGRAMS
   src/mover.py
   src/linear.py
+  src/tracking.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -150,6 +151,10 @@ install(PROGRAMS
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
+
+install(DIRECTORY launch/
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+	PATTERN ".svn" EXCLUDE)
 
 #############
 ## Testing ##

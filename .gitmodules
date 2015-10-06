@@ -1,0 +1,9 @@
+[submodule  "turtlebot_create"]
+	path = turtlebot_create
+	url = https://github.com/turtlebot/turtlebot_create.git
+[submodule  "mocap_optitrack"]
+	path = mocap_optitrack
+	url = https://github.com/ros-drivers/mocap_optitrack.git
+[submodule  "sphero_ros"]
+	path = sphero_ros
+	url = https://github.com/mmwise/sphero_ros.git

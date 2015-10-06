@@ -7,3 +7,6 @@
 [submodule  "sphero_ros"]
 	path = sphero_ros
 	url = https://github.com/mmwise/sphero_ros.git
+[submodule  "lib/TinyROS"]
+	path = lib/TinyROS
+	url = https://github.com/zang3t5u/TinyROS.git

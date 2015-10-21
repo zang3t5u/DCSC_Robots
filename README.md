@@ -25,6 +25,8 @@ To download the repo, simply clone it:
 
 Then initialize and update the submodules:
 
+    $ cd DCSC_Robots/
+
     $ git submodule init
 
     $ git submodule update

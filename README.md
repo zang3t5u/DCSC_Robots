@@ -21,7 +21,13 @@ The lab setup includes:
 ##Setup
 To download the repo, simply clone it:
 
-    git clone --recursive https://github.com/zang3t5u/DCSC_Robots.git
+    git clone https://github.com/zang3t5u/DCSC_Robots.git
+
+Then initialize and update the submodules:
+
+	git submodule init
+
+	git submodule update
 
 Install the tinyOS dependencies:
 

@@ -31,13 +31,13 @@ Then initialize and update the submodules:
 
 Install the tinyOS dependencies:
 
-    [sudo] apt-get install automake
-    [sudo] apt-get install nescc
-    [sudo] apt-get install default-jdk
-    [sudo] apt-get install msp430-gcc
+    $ [sudo] apt-get install automake
+    $ [sudo] apt-get install nescc
+    $ [sudo] apt-get install default-jdk
+    $ [sudo] apt-get install msp430-gcc
 
-    cd lib/tinyos-main/tools/
-    ./Bootstrap
-    ./configure
-    make
-    sudo make install
+    $ cd /opt/tinyos-main/tools/
+    $ ./Bootstrap
+    $ ./configure
+    $ make
+    $ sudo make install

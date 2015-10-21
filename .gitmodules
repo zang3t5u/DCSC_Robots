@@ -10,3 +10,4 @@
 [submodule  "lib/TinyROS"]
 	path = lib/TinyROS
 	url = https://github.com/zang3t5u/TinyROS.git
+	branch = master

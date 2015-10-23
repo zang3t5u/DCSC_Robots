@@ -36,10 +36,18 @@
 ## Simple talker demo that published std_msgs/Strings messages
 ## to the 'chatter' topic
 
+#ROS Libraries
 import rospy
-from std_msgs.msg import String
+import tf
+import numpy as np
+
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Twist
 from dcsc_consensus.msg import bot_data_msg
 
+
+#Support when Node is run
 import os
 import sys
 import subprocess
@@ -47,7 +55,7 @@ import time
 import struct
 import math
 
-#TOS Stuff
+#Enabling communication with WSN
 import Bot_Net_ROS
 
 def talker():
@@ -70,27 +78,77 @@ def talker():
 	print "botID      : ", botID
 	Num_of_Bots = int(sys.argv[1]) 
 	print "Total Bots : ", Num_of_Bots
+	
+	dl = Bot_Net_ROS.Bot_Net(arg, Num_of_Bots, botID)
 
-	node_name = 'talker'+str(int(botID))
+	#Start ROS Node
+	#Create Node
+	node_name = 'Bot_Net_Node_'+str(int(botID))
 	print "Starting ROSnode named: ", node_name
 	rospy.init_node(node_name, anonymous=True)
 	rate = rospy.Rate(10) # 10hz
+	#----------------
+	#ROS Publishing
+	#----------------
+	#Publish to all Robot Nodes
+	pubPoses = []
+	pubVels = []
+	for i in range(Num_of_Bots):		
+		if i != botID-1:
+			pose_topic_name = 'create'+str(i+1)+'/ground_pose'
+			vel_topic_name = 'create'+str(i+1)+'/cmd_vel'
+		else:
+			pose_topic_name = 'ground_pose'
+			vel_topic_name = 'cmd_vel'
+		pubPoses.append(rospy.Publisher(pose_topic_name, Pose2D, queue_size=10)) 
+		pubVels.append(rospy.Publisher(vel_topic_name, Twist, queue_size=10))
+	publish_data = [0]*(Num_of_Bots)
+	publish_dataType = [-1]*(Num_of_Bots)
+	
+	#----------------
+	#ROS Subscribing
+	#----------------
+	#If dl is a Central Comp, subscribe to Optitrack data
+	if botID == 0:
+		dl.send_msg(botID, 1, 1, [500.0, 1400.0, math.pi])
+		'''
+		#Get data of which nodes we are connected to
+		connected_to = rospy.get_param('~connected_to',[])
+		sub_opti = []
+		for node in connected_to:
+			sub_opti.append(rospy.Subscriber('/Robot_'+str(node)+'/pose',PoseStamped,dl.opti, callback_args=(node)))
+		'''
+	else:
+	#If dl is a Robot then subscribe to only its own pose, vel and consensus		
+		subPose = rospy.Subscriber('ground_pose', Pose2D, dl.broadcast_new, callback_args = (1))
+		subCon = rospy.Subscriber('consensus', Pose2D, dl.broadcast_new, callback_args = (3))
+		subVel = rospy.Subscriber('cmd_vel', Twist, dl.broadcast_new, callback_args = (2))
 
-	dl = Bot_Net_ROS.Bot_Net(arg, Num_of_Bots, botID)
 	count = 0;
 	sys.stdout.flush()
 
 	while not rospy.is_shutdown():
 		for i in range(Num_of_Bots):
 			if(dl.publish_data[i] == 1):		
-				data = bot_data_msg(botID = dl.bot_data[i][0], x = dl.bot_data[i][1], y = dl.bot_data[i][2], theta = dl.bot_data[i][3])
-				rospy.loginfo(data)
-				dl.pub.publish(data)
+				rospy.loginfo('UPdating Create %d\'s Pose', i+1)
+				pose = Pose2D()
+				pose.x = dl.bot_data[i][1]
+				pose.y = dl.bot_data[i][2]
+				pose.theta = dl.bot_data[i][3]
+				pubPoses[i].publish(pose)
+
+				rospy.loginfo('Updating Create %d\'s Vels', i+1)
+				twist = Twist()
+				twist.linear.x = dl.bot_data[i][4]
+				twist.angular.z = dl.bot_data[i][5]
+				pubVels[i].publish(twist)
+
 				dl.publish_data[i] = 0
         rate.sleep()
 
 if __name__ == '__main__':
     try:
-        talker()
+		talker()
     except rospy.ROSInterruptException, KeyboardInterrupt:
-        pass
+		print "Ending Program!!!!!!"
+		sys.exit(1)		

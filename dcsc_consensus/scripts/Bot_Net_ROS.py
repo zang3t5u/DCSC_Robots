@@ -1,7 +1,9 @@
+#!/usr/bin/env python
 import os
 import sys
 import time
 import struct
+import math
 
 #tos stuff
 import Bot_NetMsg
@@ -12,8 +14,15 @@ from tinyos.packet.Serial import Serial
 
 #ROS Stuff
 import rospy
-from std_msgs.msg import String
+import tf
+import numpy as np
+
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Twist
 from dcsc_consensus.msg import bot_data_msg
+
+
 
 #Total TimeInterval in millisecs for 1 bot in TDMA
 t_interval = 250
@@ -30,15 +39,20 @@ class Bot_Net:
 		rospy.loginfo(rospy.get_caller_id() + "I heard from %d", data.botID)
 
 	def __init__(self, motestring, Num_of_Bots, botID):
-
+		
 		global NBots, send_queue_size
+		
+		#Displacement for broadcasting new position		
+		self.event_trigger_movement = 10;
+		self.event_trigger_vel = 5;
+		self.event_trigger_consensus = 5;
 		
 		self.counter = 0
 		self.total_msgs = 0.
 		self.mif = MoteIF.MoteIF()
 		self.tos_source = self.mif.addSource(motestring)
 		self.mif.addListener(self, Bot_NetMsg.Bot_NetMsg)
-
+		
 		NBots = Num_of_Bots
 		self.motestring = motestring
 		self.botID = botID
@@ -54,6 +68,8 @@ class Bot_Net:
 		for i in range(NBots):
 			self.bot_data.append([0]*10)
 			self.bot_data[i][0] = i+1
+
+		self.publish_data = [0]*(NBots)
 		'''
 		Index							Data
 		-----							----
@@ -61,20 +77,59 @@ class Bot_Net:
 		1									X
 		2									Y
 		3									Theta
-		4									VelX
-		5									VelY
-		6									VelTheta
+		4									VelLinear
+		5									VelAngular
+		6									0
 		7									Leader X
 		8									Leader Y
 		9									last_update_time
 		'''
-		#ROS
-		topic_name = 'talker'+str(botID)
-		self.pub = rospy.Publisher(topic_name, bot_data_msg, queue_size=10)
-		self.publish_data = [0]*(NBots+1)
+		'''
+		#Create Node
+		node_name = 'Bot_Net_Node_'+str(int(botID))
+		print "Starting ROSnode named: ", node_name
+		rospy.init_node(node_name, anonymous=True)
+		rate = rospy.Rate(10) # 10hz
+		#----------------
+		#ROS Publishing
+		#----------------
+		#Publish to all Robot Nodes
+		self.pubPoses = []
+		self.pubVels = []
+		for i in range(Num_of_Bots):		
+			if i != self.botID:
+				pose_topic_name = 'create'+str(i+1)+'/ground_pose'
+				vel_topic_name = 'create'+str(i+1)+'/cmd_vel'
+			else:
+				pose_topic_name = 'ground_pose'
+				vel_topic_name = 'cmd_vel'
+			self.pubPoses.append(rospy.Publisher(pose_topic_name, Pose2D, queue_size=10)) 
+			self.pubVels.append(rospy.Publisher(vel_topic_name, Twist, queue_size=10))
+		self.publish_data = [0]*(NBots)
+		self.publish_dataType = [-1]*(NBots)
+		
+		#----------------
+		#ROS Sunbscribing
+		#----------------
+		#If self is a Central Comp, subscribe to Optitrack data
+		if self.botID == 0:
+			#self.send_msg(self.botID, 1, 1, [500.0, 1400.0, math.pi])
+			####
+			#Get data of which nodes we are connected to
+			self.connected_to = rospy.get_param('~connected_to',[])
+			self.sub_opti = []
+			for node in self.connected_to:
+				self.sub_opti.append(rospy.Subscriber('/Robot_'+str(node)+'/pose',PoseStamped,self.opti, callback_args=(node)))
+			####
+		else:
+		#If self is a Robot then subscribe to only its own pose, vel and consensus		
+			self.subPose = rospy.Subscriber('ground_pose', Pose2D, self.broadcast_new, callback_args = (1))
+			self.subVel = rospy.Subscriber('cmd_vel', Twist, self.broadcast_new, callback_args = (2))
+			self.subCon = rospy.Subscriber('consensus', Pose2D, self.broadcast_new, callback_args = (3))
 		
 		for i in range(Num_of_Bots):
 			rospy.Subscriber('talker'+str(int(botID)), bot_data_msg, self.callback)
+		'''
 		#For TimeSync
 		self.start = False
 		print "Start clock?: ", self.start
@@ -82,7 +137,15 @@ class Bot_Net:
 		self.timeOffset = self.botID*t_interval
 		self.last_recv_time = 0
 		print "TDMA Offset: ", self.timeOffset
-
+		
+	
+	#---------------------------------------------------
+	#	Function receive(self, src, msg)
+	#	
+	#	Use:
+	#	Listens to data broadcasted
+	#	Updates current topics and database
+	#---------------------------------------------------
 	def receive(self, src, msg):
 		global recvUART
 		recvUART = True  	
@@ -144,7 +207,14 @@ class Bot_Net:
 		sys.stdout.flush()
 		recvUART = False
 		#self.bot_data[msg_bot].append(abstracted_data)
-    
+
+	#---------------------------------------------------
+	#	Function send(self, sender_ID, recv_Rob_ID, dataType, data)
+	#	
+	#	Use:
+	#	Creates TinyOS message from arguments
+	#	Sends data to UART
+	#---------------------------------------------------    
 	def send_msg(self, send_ID, recv_Rob_ID, dataType, data):
     	
 		global uartBusy, NBots, t_interval
@@ -194,7 +264,14 @@ class Bot_Net:
 			self.counter+=1
 			self.counter%=256
 		return msg_was_sent
-    	
+   
+	#---------------------------------------------------
+	#	Function decode_data(self, msg_bot, m, msg_source)
+	#	
+	#	Use:
+	#	Updates database
+	#	Sets corresponding bot's falg to signal calling program to publish to the relevant topics
+	#--------------------------------------------------- 	
 	def decode_data(self, msg_bot, m, msg_source):
 		botIndex = msg_bot-1
 		dataType = m.get_dataType()
@@ -231,6 +308,85 @@ class Bot_Net:
 				print "theta: ", self.bot_data[i][3]
 				print "-------"
 		sys.stdout.flush()
+
+	#---------------------------------------------------
+	#	Function Opti(self, pose, robot_node_id)
+	#	
+	#	Use:
+	#	Listens to connected robot's data from the optitrack system and broadcasts to robots if they move by a large distance
+	#---------------------------------------------------
+	def opti(self,pose, node):
+		global uartBusy
+		botIndex = node-1
+		quaternion = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
+		euler = tf.transformations.euler_from_quaternion(quaternion)
+		x_new = pose.pose.position.x
+		y_new = pose.pose.position.y
+		theta_new = (euler[2]+pi)%(2*pi)-pi
+		x_old = self.bot_data[botIndex][1]  
+		y_old = self.bot_data[botIndex][2] 
+		theta_old = self.bot_data[botIndex][3]
+		dx = x_new - x_old
+		dy = y_new - y_old
+		dtheta = theta_new - theta_old
+
+		movement = dx**2 + dy**2 + dtheta**2
+		if movement > self.event_trigger_movement or not self.start:
+			if not self.start:
+				rospy.loginfo('Broadcasting initial Positions')
+			while uartBusy:
+				pass
+			self.send_msg(self.botID, node, 1, [x_new, y_new, theta_new])
+			self.bot_data[botIndex][1] = x_new
+			self.bot_data[botIndex][2] = y_new
+			self.bot_data[botIndex][3] = theta_new
+	#---------------------------------------------------
+	#	Function broadcast_new(self, data, dataType)
+	#	
+	#	Use:
+	#	Callback function run on Robots to broadcast new values if event triggering conditions are satisfied
+	#---------------------------------------------------
+	def broadcast_new(self, data, dataType):
+		global uartBusy
+		botIndex = self.botID-1
+		x_old = self.bot_data[botIndex][1 + 3*(dataType-1)] 
+		y_old = self.bot_data[botIndex][2 + 3*(dataType-1)]
+		theta_old = self.bot_data[botIndex][3 + 3*(dataType-1)]
+		strType = ''
+		#If Pose data is to be updated
+		if dataType == 1:
+			strType = 'Pose'
+			x_new = data.x
+			y_new = data.y
+			theta_new = data.theta
+			condn = self.event_trigger_movement
+		#If Twist is to be transmitted
+		elif dataType == 2:
+			strType = 'Velocity'
+			x_new = data.linear.x
+			y_new = data.angular.z
+			theta_new = 0
+			condn = self.event_trigger_vel
+		elif dataType == 3:
+			strType = 'Consensus'
+			x_new = data.x
+			y_new = data.y
+			theta_new = 0
+			condn = self.event_trigger_consensus
+		dx = x_new - x_old
+		dy = y_new - y_old
+		dtheta = theta_new - theta_old
+		
+		change = dx**2 + dy**2 + dtheta**2
+		if change > condn or x_new == 0:
+			rospy.loginfo('Broadcasting new Values of ' + strType)
+			while uartBusy:
+				pass
+			self.send_msg(self.botID, 0, dataType, [x_new, y_new, theta_new])
+			self.bot_data[botIndex][1 + 3*(dataType-1)]  = x_new
+			self.bot_data[botIndex][2 + 3*(dataType-1)]  = y_new
+			self.bot_data[botIndex][3 + 3*(dataType-1)]  = theta_new
+			
 '''
     def main_loop(self):
     	while 1:

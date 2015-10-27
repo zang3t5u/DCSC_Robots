@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import os
 import sys
 import time
@@ -22,7 +23,8 @@ from geometry_msgs.msg import Pose2D
 from geometry_msgs.msg import Twist
 from dcsc_consensus.msg import bot_data_msg
 
-
+#For Debugging, change to True
+DEBUG = False
 
 #Total TimeInterval in millisecs for 1 bot in TDMA
 t_interval = 10
@@ -51,6 +53,8 @@ class Bot_Net:
 		self.event_trigger_vel = 0.05;
 		self.event_trigger_consensus = 0.05;
 		
+		
+
 		self.counter = 0
 		self.total_msgs = 0.
 		self.mif = MoteIF.MoteIF()
@@ -73,6 +77,11 @@ class Bot_Net:
 			self.bot_data.append([0]*10)
 			self.bot_data[i][0] = i+1
 
+		#Tracking which Robot values were initialized
+		self.bot_init_broadcast = [0]*NBots
+		print self.bot_init_broadcast
+		
+		#Tracking changes in data to be published for each bot		
 		self.publish_data = [0]*(NBots)
 		'''
 		Index							Data
@@ -325,7 +334,7 @@ class Bot_Net:
 		sys.stdout.flush()
 
 	#---------------------------------------------------
-	#	Function Opti(self, pose, robot_node_id)
+	#	Function opti(self, pose, robot_node_id)
 	#	
 	#	Use:
 	#	Listens to connected robot's data from the optitrack system and broadcasts to robots if they move by a large distance
@@ -353,18 +362,57 @@ class Bot_Net:
 
 		movement = math.sqrt(dx**2 + dy**2)
 		if movement > self.event_trigger_movement or abs(dtheta) > self.event_trigger_angle or not self.start:
-			if not self.start:
-				rospy.loginfo('Broadcasting initial Positions from '+ str(node))
+			if not self.bot_init_broadcast[botIndex]:
+				rospy.loginfo('Broadcasting initial Position of '+ str(node))
+				self.bot_init_broadcast[botIndex] = 1
 			while uartBusy:
 				#print 'Busy'
 				pass
 			print "Sending New for ", node
+			if DEBUG == True:
+				print "dTheta is ", abs(dtheta), " against ", self.event_trigger_angle
+				print "movement is ", movement, " against ", self.event_trigger_movement
 			msg_was_sent = self.send_msg(self.botID, node, 1, [x_new, y_new, theta_new])
 			if msg_was_sent:
 				self.bot_data[botIndex][1] = x_new
 				self.bot_data[botIndex][2] = y_new
 				self.bot_data[botIndex][3] = theta_new
+	#---------------------------------------------------
+	#	Function vel(self, twist, robot_node_id)
+	#	
+	#	Use:
+	#	Listens to connected robot's cmd_vel topic and transmits if significant change is given
+	#---------------------------------------------------
+	def vel(self, twist, node):
+		global uartBusy
+		botIndex = node-1
+		x_new = twist.linear.x
+		y_new = twist.angular.z
+		theta_new = 0
 
+		x_old = self.bot_data[botIndex][4]  
+		y_old = self.bot_data[botIndex][5] 
+		theta_old = self.bot_data[botIndex][6]
+
+		dx = x_new - x_old
+		dy = y_new - y_old
+		dtheta = theta_new - theta_old
+				
+		change = math.sqrt(dx**2 + dy**2 + dtheta**2)
+		condn = self.event_trigger_vel
+		if change > condn:
+			while uartBusy:
+				print "Busy for Vel"				
+				pass
+			print "Sending new Vel for ", node
+			msg_was_sent = self.send_msg(self.botID, node, 2, [x_new, y_new, theta_new])
+			if msg_was_sent:
+				self.bot_data[botIndex][1] = x_new
+				self.bot_data[botIndex][2] = y_new
+				self.bot_data[botIndex][3] = theta_new
+			
+		
+		
 	#---------------------------------------------------
 	#	Function broadcast_new(self, data, dataType)
 	#	
@@ -400,11 +448,14 @@ class Bot_Net:
 			y_new = data.y
 			theta_new = 0
 			condn = self.event_trigger_consensus
+
 		dx = x_new - x_old
 		dy = y_new - y_old
 		dtheta = theta_new - theta_old
+		
 		print "Bot Update"
-		change = dx**2 + dy**2 + dtheta**2
+		change = math.sqrt(dx**2 + dy**2 + dtheta**2)
+
 		if change > condn or (dataType==2 and x_new == 0 and not bot_stopped_broadcast):
 			rospy.loginfo('Broadcasting new Values of ' + strType)
 			while uartBusy:

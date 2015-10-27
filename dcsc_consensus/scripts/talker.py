@@ -117,11 +117,12 @@ def talker():
 	if botID == 0:
 		#dl.send_msg(botID, 1, 1, [500.0, 1400.0, math.pi])
 		#Get data of which nodes we are connected to
-		connected_to = [1, 2, 3, 4, 5]
 		sub_opti = []
-		for node in connected_to:
-			print "Subscribing to Robot ", node
-			sub_opti.append(rospy.Subscriber('/Robot_'+str(node)+'/ground_pose',Pose2D,dl.opti, callback_args=(node)))
+		sub_vel = []
+		for node in range(Num_of_Bots):
+			print "Subscribing to Robot ", node+1
+			sub_opti.append(rospy.Subscriber('/Robot_'+str(node+1)+'/ground_pose',Pose2D,dl.opti, callback_args=(node+1)))
+			sub_vel.append(rospy.Subscriber('/create'+str(node+1)+'/cmd_vel', Twist, dl.vel, callback_args=(node+1)))
 			time.sleep(Bot_Net_ROS.t_interval/1000)
 	else:
 	#If dl is a Robot then subscribe to only its own pose, vel and consensus		

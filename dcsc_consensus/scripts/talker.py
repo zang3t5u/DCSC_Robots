@@ -44,6 +44,7 @@ import numpy as np
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import PoseStamped
 from dcsc_consensus.msg import bot_data_msg
 
 
@@ -71,7 +72,7 @@ def talker():
 		arg = 'serial@'+dev+':115200'
 	else:
 		arg = sys.argv[3]
-
+	
 	print "------------------"
 	print "Serial Started at:"+arg
 	botID = int(sys.argv[2])
@@ -79,6 +80,10 @@ def talker():
 	Num_of_Bots = int(sys.argv[1]) 
 	print "Total Bots : ", Num_of_Bots
 	
+	#Node to check	
+	init_msg_recvd = 0
+	node_recv_count = 0
+
 	dl = Bot_Net_ROS.Bot_Net(arg, Num_of_Bots, botID)
 
 	#Start ROS Node
@@ -110,16 +115,17 @@ def talker():
 	#----------------
 	#If dl is a Central Comp, subscribe to Optitrack data
 	if botID == 0:
-		dl.send_msg(botID, 1, 1, [500.0, 1400.0, math.pi])
-		'''
+		#dl.send_msg(botID, 1, 1, [500.0, 1400.0, math.pi])
 		#Get data of which nodes we are connected to
-		connected_to = rospy.get_param('~connected_to',[])
+		connected_to = [1, 2, 3, 4, 5]
 		sub_opti = []
 		for node in connected_to:
-			sub_opti.append(rospy.Subscriber('/Robot_'+str(node)+'/pose',PoseStamped,dl.opti, callback_args=(node)))
-		'''
+			print "Subscribing to Robot ", node
+			sub_opti.append(rospy.Subscriber('/Robot_'+str(node)+'/ground_pose',Pose2D,dl.opti, callback_args=(node)))
+			time.sleep(Bot_Net_ROS.t_interval/1000)
 	else:
 	#If dl is a Robot then subscribe to only its own pose, vel and consensus		
+		print "Subscribed"
 		subPose = rospy.Subscriber('ground_pose', Pose2D, dl.broadcast_new, callback_args = (1))
 		subCon = rospy.Subscriber('consensus', Pose2D, dl.broadcast_new, callback_args = (3))
 		subVel = rospy.Subscriber('cmd_vel', Twist, dl.broadcast_new, callback_args = (2))
@@ -129,21 +135,32 @@ def talker():
 
 	while not rospy.is_shutdown():
 		for i in range(Num_of_Bots):
+			'''			
+			if(botID==0):
+				print "Subscribing to Robot ", i+1
+				sub_opti = rospy.Subscriber('/Robot_'+str(i+1)+'/ground_pose',Pose2D,dl.opti, callback_args=(i+1))
+				time.sleep(Bot_Net_ROS.t_interval/1000)
+				sub_opti.unregister()
+			'''
+				
 			if(dl.publish_data[i] == 1):		
-				rospy.loginfo('UPdating Create %d\'s Pose', i+1)
+				rospy.loginfo('Updating Create %d\'s Pose', i+1)
 				pose = Pose2D()
 				pose.x = dl.bot_data[i][1]
 				pose.y = dl.bot_data[i][2]
 				pose.theta = dl.bot_data[i][3]
 				pubPoses[i].publish(pose)
 
+				dl.publish_data[i] = 0
+				
+			elif(dl.publish_data[i]==2):
 				rospy.loginfo('Updating Create %d\'s Vels', i+1)
 				twist = Twist()
 				twist.linear.x = dl.bot_data[i][4]
 				twist.angular.z = dl.bot_data[i][5]
 				pubVels[i].publish(twist)
-
 				dl.publish_data[i] = 0
+
         rate.sleep()
 
 if __name__ == '__main__':

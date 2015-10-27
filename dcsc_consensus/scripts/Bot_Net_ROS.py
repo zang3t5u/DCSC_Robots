@@ -25,8 +25,11 @@ from dcsc_consensus.msg import bot_data_msg
 
 
 #Total TimeInterval in millisecs for 1 bot in TDMA
-t_interval = 250
+t_interval = 10
 NBots = 1
+
+#Check if Bot Stopped
+bot_stopped_broadcast = False
 
 #Check if UART is free
 send_queue_size = 50
@@ -43,9 +46,10 @@ class Bot_Net:
 		global NBots, send_queue_size
 		
 		#Displacement for broadcasting new position		
-		self.event_trigger_movement = 10;
-		self.event_trigger_vel = 5;
-		self.event_trigger_consensus = 5;
+		self.event_trigger_movement = 0.1;
+		self.event_trigger_angle = math.pi/10;
+		self.event_trigger_vel = 0.05;
+		self.event_trigger_consensus = 0.05;
 		
 		self.counter = 0
 		self.total_msgs = 0.
@@ -135,7 +139,8 @@ class Bot_Net:
 		print "Start clock?: ", self.start
 		self.start_time = time.time()
 		self.timeOffset = self.botID*t_interval
-		self.last_recv_time = 0
+		self.last_recv_time = 0   
+		self.msg_count = 0
 		print "TDMA Offset: ", self.timeOffset
 		
 	
@@ -222,6 +227,7 @@ class Bot_Net:
 		msg_was_sent = False
 		
 		if((self.start or (self.botID==0)) and (not uartBusy) and (not recvUART)):
+			uartBusy = True			
 			print "Sending packet ", self.counter
 			smsg = Bot_NetMsg.Bot_NetMsg()
 			smsg.set_seqNo(self.counter)
@@ -231,7 +237,7 @@ class Bot_Net:
 			if(len(data)<3):
 				data.extend(0)
 			smsg.set_data(data)
-			
+
 			#Wait for millisec timeslot 
 			t = 1000*(time.time()-self.start_time) 
 			cond = int((t%((NBots+1)*t_interval))/t_interval)
@@ -243,7 +249,11 @@ class Bot_Net:
 				self.discarded = [-1]*(NBots+1)
 				self.start = True 
 			
-			while(cond != self.botID):
+			timeslot = self.botID
+			#if self.botID == 0:
+				#timeslot = self.msg_count
+			
+			while(cond != timeslot):
 				t = 1000*(time.time()-self.start_time)
 				cond = int((t%((NBots+1)*t_interval))/t_interval)
 				#print t    
@@ -251,18 +261,22 @@ class Bot_Net:
 			
 			#Send Packet twice to ensure delivery and minimize number of dropped packets
 			packetCount = 0
-			uartBusy = True
+			#uartBusy = True
 			#self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg) 
-			while(packetCount<2):
+			while(packetCount<1):
 				#print "Sending packet ", self.counter," : Count ", packetCount
-				while(recvUART):{} 
+				while(recvUART):
+					print "Receiving"
 				self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg) 
 				packetCount+=1
-				time.sleep(0.5)
+				#time.sleep(t_interval/1000)
+				print "Gaya"
 			msg_was_sent = True
 			uartBusy = False
 			self.counter+=1
-			self.counter%=256
+			self.counter%=256 
+		print "Exit Sending"
+		self.msg_count = (self.msg_count + 1)%(NBots+1)
 		return msg_was_sent
    
 	#---------------------------------------------------
@@ -289,7 +303,8 @@ class Bot_Net:
 		Vel Data => dataType = 2
 		Leader Data => dataType = 3
 		'''
-		self.publish_data[botIndex] = 1;
+		#Signal Publisher to update values
+		self.publish_data[botIndex] = dataType;
 
 		#print " Storing for Robot", msg_bot, "at index: ", botIndex
 		self.bot_data[botIndex][1 + 3*(dataType-1)] = data[0]
@@ -318,11 +333,17 @@ class Bot_Net:
 	def opti(self,pose, node):
 		global uartBusy
 		botIndex = node-1
-		quaternion = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
-		euler = tf.transformations.euler_from_quaternion(quaternion)
-		x_new = pose.pose.position.x
-		y_new = pose.pose.position.y
-		theta_new = (euler[2]+pi)%(2*pi)-pi
+		#If using /Robot_i/pose of msg type PoseStamped
+		#quaternion = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
+		#euler = tf.transformations.euler_from_quaternion(quaternion)
+		#x_new = pose.pose.position.x
+		#y_new = pose.pose.position.y
+		#theta_new = (euler[2]+math.pi)%(2*math.pi)-math.pi
+		
+		#If using /Robot_i/ground_pose of msg type Pose2D
+		x_new = pose.x
+		y_new = pose.y
+		theta_new = pose.theta
 		x_old = self.bot_data[botIndex][1]  
 		y_old = self.bot_data[botIndex][2] 
 		theta_old = self.bot_data[botIndex][3]
@@ -330,16 +351,20 @@ class Bot_Net:
 		dy = y_new - y_old
 		dtheta = theta_new - theta_old
 
-		movement = dx**2 + dy**2 + dtheta**2
-		if movement > self.event_trigger_movement or not self.start:
+		movement = math.sqrt(dx**2 + dy**2)
+		if movement > self.event_trigger_movement or abs(dtheta) > self.event_trigger_angle or not self.start:
 			if not self.start:
-				rospy.loginfo('Broadcasting initial Positions')
+				rospy.loginfo('Broadcasting initial Positions from '+ str(node))
 			while uartBusy:
+				#print 'Busy'
 				pass
-			self.send_msg(self.botID, node, 1, [x_new, y_new, theta_new])
-			self.bot_data[botIndex][1] = x_new
-			self.bot_data[botIndex][2] = y_new
-			self.bot_data[botIndex][3] = theta_new
+			print "Sending New for ", node
+			msg_was_sent = self.send_msg(self.botID, node, 1, [x_new, y_new, theta_new])
+			if msg_was_sent:
+				self.bot_data[botIndex][1] = x_new
+				self.bot_data[botIndex][2] = y_new
+				self.bot_data[botIndex][3] = theta_new
+
 	#---------------------------------------------------
 	#	Function broadcast_new(self, data, dataType)
 	#	
@@ -347,7 +372,7 @@ class Bot_Net:
 	#	Callback function run on Robots to broadcast new values if event triggering conditions are satisfied
 	#---------------------------------------------------
 	def broadcast_new(self, data, dataType):
-		global uartBusy
+		global uartBusy, bot_stopped_broadcast
 		botIndex = self.botID-1
 		x_old = self.bot_data[botIndex][1 + 3*(dataType-1)] 
 		y_old = self.bot_data[botIndex][2 + 3*(dataType-1)]
@@ -366,6 +391,8 @@ class Bot_Net:
 			x_new = data.linear.x
 			y_new = data.angular.z
 			theta_new = 0
+			if x_new != 0:
+				bot_stopped_broadcast = False;
 			condn = self.event_trigger_vel
 		elif dataType == 3:
 			strType = 'Consensus'
@@ -376,16 +403,18 @@ class Bot_Net:
 		dx = x_new - x_old
 		dy = y_new - y_old
 		dtheta = theta_new - theta_old
-		
+		print "Bot Update"
 		change = dx**2 + dy**2 + dtheta**2
-		if change > condn or x_new == 0:
+		if change > condn or (dataType==2 and x_new == 0 and not bot_stopped_broadcast):
 			rospy.loginfo('Broadcasting new Values of ' + strType)
 			while uartBusy:
-				pass
+				print "hehe"
 			self.send_msg(self.botID, 0, dataType, [x_new, y_new, theta_new])
 			self.bot_data[botIndex][1 + 3*(dataType-1)]  = x_new
 			self.bot_data[botIndex][2 + 3*(dataType-1)]  = y_new
 			self.bot_data[botIndex][3 + 3*(dataType-1)]  = theta_new
+			if dataType==2 and x_new == 0 and not bot_stopped_broadcast:
+				bot_stopped_broadcast = True;
 			
 '''
     def main_loop(self):

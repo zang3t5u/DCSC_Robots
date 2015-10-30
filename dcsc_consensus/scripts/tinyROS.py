@@ -41,6 +41,7 @@ import rospy
 import tf
 import numpy as np
 
+from std_msgs.msg import Int32
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D
 from geometry_msgs.msg import Twist
@@ -59,7 +60,7 @@ import math
 #Enabling communication with WSN
 import Bot_Net_ROS
 
-def talker():
+def tinyROS():
 	if '-h' in sys.argv or len(sys.argv) < 3:
 		print "Usage:", sys.argv[0], "Num_of_Bots", "BotID" , "sf@localhost:9002"
 		sys.exit()
@@ -96,6 +97,8 @@ def talker():
 	#ROS Publishing
 	#----------------
 	#Publish to all Robot Nodes
+	pubID = 	rospy.Publisher('botID', Int32, queue_size=10)
+	pubNum = rospy.Publisher('Num_of_Bots', Int32, queue_size = 10)
 	pubPoses = []
 	pubVels = []
 	for i in range(Num_of_Bots):		
@@ -143,7 +146,9 @@ def talker():
 				time.sleep(Bot_Net_ROS.t_interval/1000)
 				sub_opti.unregister()
 			'''
-				
+			IDdata = Int32()
+			IDdata.data = botID
+
 			if(dl.publish_data[i] == 1):		
 				rospy.loginfo('Updating Create %d\'s Pose', i+1)
 				pose = Pose2D()
@@ -162,11 +167,13 @@ def talker():
 				pubVels[i].publish(twist)
 				dl.publish_data[i] = 0
 
-        rate.sleep()
+			pubID.publish(IDdata)	
+			pubNum.publish(Num_of_Bots)		
+			rate.sleep()
 
 if __name__ == '__main__':
     try:
-		talker()
+		tinyROS()
     except rospy.ROSInterruptException, KeyboardInterrupt:
 		print "Ending Program!!!!!!"
 		sys.exit(1)		

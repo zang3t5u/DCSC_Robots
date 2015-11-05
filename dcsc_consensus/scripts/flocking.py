@@ -138,7 +138,7 @@ class Flocking:
 		for i in range(self.Num_of_Bots):
 			f_Position[i][0] = self.state[0] + f_dR[i]*math.cos(f_dTheta[i])
 			f_Position[i][1] = self.state[1] + f_dR[i]*math.sin(f_dTheta[i])
-		rospy.loginfo(f_Position)
+		rospy.loginfo("Positions:"+str(f_Position))
 		for i in range(self.Num_of_Bots):
 			DistMin = math.sqrt(2*((float("Infinity"))**2))	
 			for j in range(len(UnAssigned)):
@@ -152,8 +152,8 @@ class Flocking:
 			self.bot_form_poses[i][0] = f_Position[AssignToBot[i]][0]
 			self.bot_form_poses[i][1] = f_Position[AssignToBot[i]][1]
 			if (i==self.botID-1):
-				self.dx = f_Position[i][0] - self.state[0]
-				self.dy = f_Position[i][1] - self.state[1]
+				self.dx = self.bot_form_poses[i][0] - self.state[0]
+				self.dy = self.bot_form_poses[i][1] - self.state[1]
 
 	
 	def listen(self,message, node):

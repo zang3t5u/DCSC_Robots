@@ -91,6 +91,7 @@ class Flocking:
 		while not rospy.is_shutdown():
 			while not self.start:
 				pass
+			time.sleep(0.5*self.Num_of_Bots)
 			#Update the state
 			self.state = np.mean(self.states,axis=0)			
 			self.states = np.array([self.state])
@@ -110,9 +111,9 @@ class Flocking:
 
 	def flock_pose(self):
 		theta = 2*math.pi/self.Num_of_Bots
-		f_dR = [0]*self.Num_of_Bots
-		f_dTheta = [0]*self.Num_of_Bots
-		f_Position = [[0]*2 for i in range(self.Num_of_Bots)]
+		f_dR = [0.0]*self.Num_of_Bots
+		f_dTheta = [0.0]*self.Num_of_Bots
+		f_Position = [[0.0]*2 for i in range(self.Num_of_Bots)]
 		
 		#Arrays to assign Positions to the Bots
 		UnAssigned = [i for i in range(self.Num_of_Bots)]
@@ -134,7 +135,8 @@ class Flocking:
 			elif self.FormationID == 4:
 				f_dR[i] = self.Lmin*math.floor((i+1)/2.0)
 				f_dTheta[i] = math.fmod(i+1, 2)*(-math.pi/4.0) + (1-math.fmod(i+1,2))*(5.0*math.pi/4.0)
-			
+		
+		for i in range(self.Num_of_Bots):
 			f_Position[i][0] = self.state[0] + f_dR[i]*math.cos(f_dTheta[i])
 			f_Position[i][1] = self.state[1] + f_dR[i]*math.sin(f_dTheta[i])
 		

@@ -114,7 +114,7 @@ class Flocking:
 		f_dR = [0.0]*self.Num_of_Bots
 		f_dTheta = [0.0]*self.Num_of_Bots
 		f_Position = [[0.0]*2 for i in range(self.Num_of_Bots)]
-		
+		offsets = [[0.0]*2 for i in range(self.Num_of_Bots)]
 		#Arrays to assign Positions to the Bots
 		UnAssigned = [i for i in range(self.Num_of_Bots)]
 		AssignToBot = [float("infinity")]*self.Num_of_Bots
@@ -136,6 +136,8 @@ class Flocking:
 				f_dR[i] = self.Lmin*math.floor((i+1)/2.0)
 				f_dTheta[i] = math.fmod(i+1, 2)*(-math.pi/4.0) + (1-math.fmod(i+1,2))*(5.0*math.pi/4.0)
 		for i in range(self.Num_of_Bots):
+			offsets[i][0] = f_dR[i]*math.cos(f_dTheta[i])
+			offsets[i][1] = f_dR[i]*math.sin(f_dTheta[i])
 			f_Position[i][0] = self.state[0] + f_dR[i]*math.cos(f_dTheta[i])
 			f_Position[i][1] = self.state[1] + f_dR[i]*math.sin(f_dTheta[i])
 		rospy.loginfo("Positions:"+str(f_Position))
@@ -152,8 +154,8 @@ class Flocking:
 			self.bot_form_poses[i][0] = f_Position[AssignToBot[i]][0]
 			self.bot_form_poses[i][1] = f_Position[AssignToBot[i]][1]
 			if (i==self.botID-1):
-				self.dx = self.bot_form_poses[i][0] - self.state[0]
-				self.dy = self.bot_form_poses[i][1] - self.state[1]
+				self.dx = offsets[AssignToBot[i]][0]
+				self.dy = offsets[AssignToBot[i]][1]
 
 	
 	def listen(self,message, node):

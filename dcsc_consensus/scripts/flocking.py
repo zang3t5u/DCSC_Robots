@@ -159,7 +159,8 @@ class Flocking:
 		#rospy.loginfo('message received')
 		if not self.start:
 			self.states = array([[message.x,message.y,message.theta]])
-			print "Yaaaaaay!!"
+			if node == self.botID:
+				print "Yaaaaaay!!"
 		else: 
 			self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
 		self.start = True

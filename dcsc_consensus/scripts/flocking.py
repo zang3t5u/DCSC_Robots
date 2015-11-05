@@ -19,7 +19,7 @@ from dcsc_consensus.msg import bot_data_msg
 class Flocking:
 
 	def __init__(self):
-		if '-h' in sys.argv or len(sys.argv) < 3:
+		if '-h' in sys.argv or len(sys.argv) < 4:
 			print "Usage:", sys.argv[0], "Num_of_Bots", "BotID", "Formation_No"
 			print "Formation ID                Formation Description"
 			print "------------                ---------------------"

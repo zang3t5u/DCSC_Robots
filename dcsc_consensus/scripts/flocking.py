@@ -52,8 +52,8 @@ class Flocking:
 		self.k = array([0.05,0.05]).T
 		self.dt = 0.05
 
-		self.state = np.array([x,y,theta])
-		self.states = np.array([[x,y,theta]])
+		#self.state = np.array([x,y,theta])
+		#self.states = np.array([[x,y,theta]])
 
 		self.xr = array([0,0]).T
 		self.xl = array([0,0]).T
@@ -137,8 +137,8 @@ class Flocking:
 		for i in range(self.Num_of_Bots):
 			DistMin = math.sqrt(2*((float("Infinity"))**2))	
 			for j in range(len(UnAssigned)):
-				distx = self.bot_data[node][1] - f_Position[UnAssigned[j]][0]
-				disty = self.bot_data[node][2] - f_Position[UnAssigned[j]][1]
+				distx = self.bot_data[i][1] - f_Position[UnAssigned[j]][0]
+				disty = self.bot_data[i][2] - f_Position[UnAssigned[j]][1]
 				dist = math.sqrt(distx**2 + disty**2)
 				if dist <= DistMin:
 					DistMin = dist

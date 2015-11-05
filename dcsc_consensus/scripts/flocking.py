@@ -157,9 +157,12 @@ class Flocking:
 	
 	def listen(self,message, node):
 		#rospy.loginfo('message received')
+		if not self.start:
+			self.states = array([[message.x,message.y,message.theta]])
+		else: 
+			self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
 		self.start = True
 		self.botCount = self.botCount+1;
-		self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
 		print self.states
 		nodeIndex = node-1
 		if self.pos_updated[nodeIndex] == 0:

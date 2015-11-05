@@ -161,11 +161,12 @@ class Flocking:
 		self.botCount = self.botCount+1;
 		self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
 		print self.states
-		if self.pos_updated[node-1] == 0:
-			self.bot_data[node][1] = message.x
-			self.bot_data[node][2] = message.y
-			self.bot_data[node][3] = message.theta
-			self.pos_updated[node] = 1
+		nodeIndex = node-1
+		if self.pos_updated[nodeIndex] == 0:
+			self.bot_data[nodeIndex][1] = message.x
+			self.bot_data[nodeIndex][2] = message.y
+			self.bot_data[nodeIndex][3] = message.theta
+			self.pos_updated[nodeIndex] = 1
 
 	
 	def setID(self, botID):

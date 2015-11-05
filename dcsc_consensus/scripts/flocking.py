@@ -69,7 +69,7 @@ class Flocking:
 		self.state = array([])
 		self.states = array([[]])
 
-		self.pubFlock = rospy.Publisher('flocking_offset', Pose2D)
+		self.pubFlock = rospy.Publisher('flocking_offset', Pose2D, queue_size = 50)
 		self.subID = rospy.Subscriber('botID',Int32,self.setID)	
 
 		self.subPoses = []

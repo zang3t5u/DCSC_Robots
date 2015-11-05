@@ -66,7 +66,7 @@ class Flocking:
 		self.rate = rospy.Rate(60)
 
 		#Listening states
-		self.state = array([0,0,0])
+		self.state = array([])
 		self.states = array([[0,0,0]])
 
 		self.pubFlock = rospy.Publisher('flocking_offset', Pose2D)
@@ -161,7 +161,7 @@ class Flocking:
 		self.botCount = self.botCount+1;
 		self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
 		print self.states
-		if self.pos_updated[node] == 0:
+		if self.pos_updated[node-1] == 0:
 			self.bot_data[node][1] = message.x
 			self.bot_data[node][2] = message.y
 			self.bot_data[node][3] = message.theta

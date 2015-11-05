@@ -19,8 +19,8 @@ from dcsc_consensus.msg import bot_data_msg
 class Flocking:
 
 	def __init__(self):
-		if '-h' in sys.argv or len(sys.argv) < 2:
-			print "Usage:", sys.argv[0], "Num_of_Bots", "Formation_No"
+		if '-h' in sys.argv or len(sys.argv) < 3:
+			print "Usage:", sys.argv[0], "Num_of_Bots", "BotID", "Formation_No"
 			print "Formation ID                Formation Description"
 			print "------------                ---------------------"
 			print "     1                               Circle      "
@@ -30,9 +30,9 @@ class Flocking:
 			sys.exit()
 		#Properties
 		self.start = False
-		self.botID = 0
 		self.Rob_diam = 35.0/100.0;	#Robot Diameter in Metres
-		self.FormationID = int(sys.argv[2])
+		self.botID = int(sys.argv[2])
+		self.FormationID = int(sys.argv[3])
 		self.Num_of_Bots = int(sys.argv[1])
 		if(self.Num_of_Bots <= math.pi):
 			self.Lmin = 3*self.Rob_diam/2;

@@ -157,6 +157,7 @@ class Flocking:
 	
 	def listen(self,message, node):
 		#rospy.loginfo('message received')
+		self.start = True
 		self.botCount = self.botCount+1;
 		self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
 		print self.states
@@ -169,7 +170,6 @@ class Flocking:
 	
 	def setID(self, botID):
 		self.botID = botID.data
-		self.start = True
 
 
 if __name__ == '__main__':

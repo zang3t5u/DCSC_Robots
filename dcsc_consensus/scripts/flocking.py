@@ -29,6 +29,7 @@ class Flocking:
 			print "     4                               Wedge      "
 			sys.exit()
 		#Properties
+		self.start = False
 		self.botID = 0
 		self.Rob_diam = 35.0/100.0;	#Robot Diameter in Metres
 		self.FormationID = int(sys.argv[2])
@@ -88,7 +89,8 @@ class Flocking:
 	def talk(self):
 
 		while not rospy.is_shutdown():
-			
+			while not self.start:
+				pass
 			#Update the state
 			self.state = np.mean(self.states,axis=0)			
 			self.states = np.array([self.state])
@@ -156,15 +158,18 @@ class Flocking:
 	def listen(self,message, node):
 		#rospy.loginfo('message received')
 		self.botCount = self.botCount+1;
+		self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
+		print self.states
 		if self.pos_updated[node] == 0:
 			self.bot_data[node][1] = message.x
 			self.bot_data[node][2] = message.y
 			self.bot_data[node][3] = message.theta
 			self.pos_updated[node] = 1
-		self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
+
 	
 	def setID(self, botID):
 		self.botID = botID.data
+		self.start = True
 
 
 if __name__ == '__main__':

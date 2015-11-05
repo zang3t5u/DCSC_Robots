@@ -63,11 +63,11 @@ class Flocking:
 
 		#Create rosnode
 		rospy.init_node('Flocking_Pose')
-		self.rate = rospy.Rate(60)
+		self.rate = rospy.Rate(5)
 
 		#Listening states
 		self.state = array([])
-		self.states = array([[0,0,0]])
+		self.states = array([[]])
 
 		self.pubFlock = rospy.Publisher('flocking_offset', Pose2D)
 		self.subID = rospy.Subscriber('botID',Int32,self.setID)	

@@ -92,7 +92,7 @@ def tinyROS():
 	node_name = 'Bot_Net_Node_'+str(int(botID))
 	print "Starting ROSnode named: ", node_name
 	rospy.init_node(node_name, anonymous=True)
-	rate = rospy.Rate(10) # 10hz
+	rate = rospy.Rate(60) # 60hz
 	#----------------
 	#ROS Publishing
 	#----------------

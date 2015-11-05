@@ -12,8 +12,9 @@ import struct
 import math
 
 from numpy.matlib import *
+from std_msgs.msg import *
 from geometry_msgs.msg import Pose2D
-import bot_data_msg
+from dcsc_consensus.msg import bot_data_msg
 
 class Flocking:
 
@@ -28,9 +29,10 @@ class Flocking:
 			print "     4                               Wedge      "
 			sys.exit()
 		#Properties
+		self.botID = 0
 		self.Rob_diam = 35.0/100.0;	#Robot Diameter in Metres
-		self.FormationID = sys.argv[2]
-		self.Num_of_Bots = sys.argv[1]
+		self.FormationID = int(sys.argv[2])
+		self.Num_of_Bots = int(sys.argv[1])
 		if(self.Num_of_Bots <= math.pi):
 			self.Lmin = 3*self.Rob_diam/2;
 		else:
@@ -69,13 +71,13 @@ class Flocking:
 		self.pubFlock = rospy.Publisher('flocking_offset', Pose2D)
 		self.subID = rospy.Subscriber('botID',Int32,self.setID)	
 
-		self.subs = []
-		for i in range(Num_of_Bots):		
-			if i != botID-1:
+		self.subPoses = []
+		for i in range(self.Num_of_Bots):		
+			if i != self.botID-1:
 				pose_topic_name = 'create'+str(i+1)+'/ground_pose'
 			else:
 				pose_topic_name = 'ground_pose'
-			subPoses.append(rospy.Subscriber(pose_topic_name, Pose2D, self.listen, callback_args = (i+1))) 
+			self.subPoses.append(rospy.Subscriber(pose_topic_name, Pose2D, self.listen, callback_args = (i+1))) 
 		
 		#Start control loop
 		rospy.loginfo("Flocking initialized.")
@@ -101,7 +103,7 @@ class Flocking:
 			rospy.loginfo(pose)
 
 			#Publish
-			self.pub.publish(pose)		
+			self.pubFlock.publish(pose)		
 			self.rate.sleep()
 
 	def flock_pose(self):
@@ -111,7 +113,7 @@ class Flocking:
 		f_Position = [[0]*2 for i in range(self.Num_of_Bots)]
 		
 		#Arrays to assign Positions to the Bots
-		UnAssigned = [i+1 for i in range(self.Num_of_Bots)]
+		UnAssigned = [i for i in range(self.Num_of_Bots)]
 		AssignToBot = [float("infinity")]*self.Num_of_Bots
 		for i in range(self.Num_of_Bots):
 			#For Circle
@@ -161,7 +163,7 @@ class Flocking:
 			self.pos_updated[node] = 1
 		self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
 	
-	def selfID(self, botID):
+	def setID(self, botID):
 		self.botID = botID.data
 
 

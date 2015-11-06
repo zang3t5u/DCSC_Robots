@@ -123,6 +123,7 @@ class Controller:
 			#rospy.loginfo(self.xl)	
 
 			#Publish and sleep
+			rospy.loginfo(twist)
 			self.pub.publish(twist)		
 			self.rate.sleep()
 

@@ -111,6 +111,9 @@ class Flocking:
 			pose.y = self.dy
 			pose.theta = 0 
 
+			rospy.set_param('offset_x', self.dx)
+			rospy.set_param('offset_y', self.dy)
+
 			flock_cent = Pose2D()
 			flock_cent.x = self.state[0]
 			flock_cent.y = self.state[1]

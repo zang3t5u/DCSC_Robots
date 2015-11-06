@@ -97,7 +97,18 @@ def tinyROS():
 	node_name = 'Bot_Net_Node_'+str(int(botID))
 	print "Starting ROSnode named: ", node_name
 	rospy.init_node(node_name, anonymous=True)
-	rate = rospy.Rate(60) # 60hz
+	rate = rospy.Rate(60) # 60hz 
+	
+	#----------------
+	#ROS Set Parameters
+	#----------------
+	
+	rospy.set_param('botID', botID)
+	rospy.set_param('Num_of_Bots', Num_of_Bots)
+	bots = [x+1 for x in range(Num_of_Bots)]
+	if(botID!=0):
+		bots.remove(botID)
+	rospy.set_param('connected_to', bots)
 	#----------------
 	#ROS Publishing
 	#----------------

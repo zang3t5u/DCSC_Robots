@@ -51,9 +51,8 @@ class Flocking:
 		self.bot_form_poses = []
 		self.x = [float("infinity")]*2
 		self.x.append(0)
-
 		for i in range(self.Num_of_Bots):
-			self.bot_form_poses.append([float("infinity")]*3)
+			self.bot_form_poses.append([float("infinity"), float("infinity"), 0])
 		
 
 		self.k = array([0.05,0.05]).T
@@ -194,10 +193,11 @@ class Flocking:
 	
 	def move(self, flock_cent, offset_pose):
 		self.xg = self.bot_form_poses[self.botID-1]
+		self.xg[2] = flock_cent[2]
 		rospy.loginfo("Goal:    "+str(self.xg))
 		rospy.loginfo("Current: "+str(self.x))
 		w = math.atan((self.xg[1] - self.x[1]) / (self.xg[0] - self.x[0]))-self.x[2]
-		v = self.k[0]*(100*math.sqrt((self.xg[1] - self.x[1])**2+(self.xg[0] - self.x[0])**2))
+		v = self.k[0]*(10*math.sqrt((self.xg[1] - self.x[1])**2+(self.xg[0] - self.x[0])**2))
 		rospy.loginfo("V: "+str(v)+" W: "+str(w))
 		return [v,w]
 

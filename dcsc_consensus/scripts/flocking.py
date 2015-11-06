@@ -68,8 +68,10 @@ class Flocking:
 		#Listening states
 		self.state = array([0,0,0])
 		self.states = array([[0,0,0]])
-
+		
+		#PubSub
 		self.pubFlock = rospy.Publisher('flocking_offset', Pose2D, queue_size = 50)
+		self.pubCent = rospy.Publisher('flocking_centre', Pose2D, queue_size = 50)
 		self.subID = rospy.Subscriber('botID',Int32,self.setID)	
 
 		self.subPoses = []
@@ -101,12 +103,19 @@ class Flocking:
 			pose = Pose2D()
 			pose.x = self.dx
 			pose.y = self.dy
-			pose.theta = 0
+			pose.theta = 0 
 
-			rospy.loginfo(pose)
+			flock_cent = Pose2D()
+			flock_cent.x = self.state[0]
+			flock_cent.y = self.state[1]
+			flock_cent.theta = self.state[2]
+
+			rospy.loginfo("Offset: "+str(pose))
+			rospy.loginfo("Centre: "+str(flock_cent))
 
 			#Publish
 			self.pubFlock.publish(pose)		
+			self.pubCent.publish(flock_cent)
 			self.rate.sleep()
 
 	def flock_pose(self):
@@ -115,6 +124,7 @@ class Flocking:
 		f_dTheta = [0.0]*self.Num_of_Bots
 		f_Position = [[0.0]*2 for i in range(self.Num_of_Bots)]
 		offsets = [[0.0]*2 for i in range(self.Num_of_Bots)]
+
 		#Arrays to assign Positions to the Bots
 		UnAssigned = [i for i in range(self.Num_of_Bots)]
 		AssignToBot = [float("infinity")]*self.Num_of_Bots

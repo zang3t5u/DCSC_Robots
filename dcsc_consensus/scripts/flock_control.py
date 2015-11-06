@@ -22,6 +22,7 @@ class Controller:
 		self.Num_of_Bots = int(sys.argv[1])
 
 		#Initialize controller properties
+		self.start=False
 		self.Nc = 10
 		self.u0 = linspace(0,0,2*self.Nc).T
 		self.k = array([0.05,0.05]).T
@@ -99,7 +100,8 @@ class Controller:
 			
 			#Define the Twist
 			twist = Twist()
-
+			while not self.start:
+				pass
 			#Run minimization (temporarily follow the target directly)
 			res = minimize(self.cost,self.u0,args=(self.x,self.xl,self.xr),method='SLSQP',bounds=self.bnds,tol=1E-3,options={'maxiter': 20,'disp': False})
 			v = res.x[0:self.Nc] 
@@ -213,6 +215,7 @@ class Controller:
 	
 	def ground(self, pose):
 		self.x = array([pose.x, pose.y, pose.theta]).T
+		self.start = True
 
 	def listen(self,pose,node):
 		self.xobst[node] = (pose.x,pose.y)

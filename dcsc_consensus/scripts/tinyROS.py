@@ -69,11 +69,11 @@ def tinyROS():
 		output = test.communicate()[0].split("\n")
 		print len(output)
 		if (len(output) > 2 and int(sys.argv[2])!=0):
-			base_index = output[1].find("/dev/ttyUSB")
+			base_index = output[1].find("/dev/ttyUSB")  
+			dev = output[0][base_index:base_index+12]
 		else:
 			base_index = output[0].find("/dev/ttyUSB")
-		base_index = output[0].find("/dev/ttyUSB")
-		dev = output[0][base_index:base_index+12]
+			dev = output[0][base_index:base_index+12]
 		
 		arg = 'serial@'+dev+':115200'
 	else:

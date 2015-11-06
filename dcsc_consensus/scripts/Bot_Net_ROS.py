@@ -415,6 +415,7 @@ class Bot_Net:
 				pass
 			print "Sending new Vel for ", node
 			msg_was_sent = self.send_msg(self.botID, node, 2, [x_new, y_new, theta_new])
+			self.publish_data[botIndex] = 2
 			if msg_was_sent:
 				self.bot_data[botIndex][1] = x_new
 				self.bot_data[botIndex][2] = y_new

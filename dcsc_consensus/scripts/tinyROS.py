@@ -41,7 +41,7 @@ import rospy
 import tf
 import numpy as np
 
-from std_msgs.msg import Int32
+from std_msgs.msg import *
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D
 from geometry_msgs.msg import Twist
@@ -97,6 +97,8 @@ def tinyROS():
 	#ROS Publishing
 	#----------------
 	#Publish to all Robot Nodes
+	pubWiFiCount = rospy.Publisher('Count_WiFi_Msgs', Float64, queue_size=10)
+	pubETCount = rospy.Publisher('Count_Event_Msgs', Float64, queue_size=10)
 	pubID = 	rospy.Publisher('botID', Int32, queue_size=10)
 	pubNum = rospy.Publisher('Num_of_Bots', Int32, queue_size = 10)
 	pubPoses = []
@@ -134,7 +136,6 @@ def tinyROS():
 		subCon = rospy.Subscriber('consensus', Pose2D, dl.broadcast_new, callback_args = (3))
 		subVel = rospy.Subscriber('cmd_vel', Twist, dl.broadcast_new, callback_args = (2))
 
-	count = 0;
 	sys.stdout.flush()
 
 	while not rospy.is_shutdown():
@@ -146,9 +147,17 @@ def tinyROS():
 				time.sleep(Bot_Net_ROS.t_interval/1000)
 				sub_opti.unregister()
 			'''
+			#General data to be published
 			IDdata = Int32()
 			IDdata.data = botID
-
+			
+			count_WiFi = Float64()
+			count_WiFi.data = dl.count_WiFi 
+			
+			count_ET = Float64()
+			count_ET.data = dl.count_ET
+			
+			#Publish Bot Data if event-triggered
 			if(dl.publish_data[i] == 1):		
 				rospy.loginfo('Updating Create %d\'s Pose', i+1)
 				pose = Pose2D()
@@ -169,6 +178,8 @@ def tinyROS():
 
 			pubID.publish(IDdata)	
 			pubNum.publish(Num_of_Bots)		
+			pubWiFiCount.publish(count_WiFi) 
+			pubETCount.publish(count_ET)
 			rate.sleep()
 
 if __name__ == '__main__':

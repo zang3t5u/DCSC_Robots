@@ -53,6 +53,9 @@ class Bot_Net:
 		self.event_trigger_vel = 0.05;
 		self.event_trigger_consensus = 0.05;
 		
+		#Count the Msgs both on WiFi and Zigbee(Event-Triggered)
+		self.count_WiFi = 0.0;
+		self.count_ET = 0.0;
 		
 
 		self.counter = 0
@@ -279,6 +282,9 @@ class Bot_Net:
 				self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg) 
 				packetCount+=1
 				#time.sleep(t_interval/1000)
+
+				#Increment Event triggered count
+				self.count_ET = self.count_ET + 1.0
 				print "Gaya"
 			msg_was_sent = True
 			uartBusy = False
@@ -349,7 +355,7 @@ class Bot_Net:
 		#y_new = pose.pose.position.y
 		#theta_new = (euler[2]+math.pi)%(2*math.pi)-math.pi
 		
-		#If using /Robot_i/ground_pose of msg type Pose2D
+		#If using /Robot_i/ground_pose of msg type Pose2D		
 		x_new = pose.x
 		y_new = pose.y
 		theta_new = pose.theta
@@ -361,6 +367,7 @@ class Bot_Net:
 		dtheta = theta_new - theta_old
 
 		movement = math.sqrt(dx**2 + dy**2)
+		self.count_WiFi = self.count_WiFi + 1.0
 		if movement > self.event_trigger_movement or abs(dtheta) > self.event_trigger_angle or not self.start:
 			if not self.bot_init_broadcast[botIndex]:
 				rospy.loginfo('Broadcasting initial Position of '+ str(node))
@@ -373,6 +380,7 @@ class Bot_Net:
 				print "dTheta is ", abs(dtheta), " against ", self.event_trigger_angle
 				print "movement is ", movement, " against ", self.event_trigger_movement
 			msg_was_sent = self.send_msg(self.botID, node, 1, [x_new, y_new, theta_new])
+			self.publish_data[botIndex] = 1
 			if msg_was_sent:
 				self.bot_data[botIndex][1] = x_new
 				self.bot_data[botIndex][2] = y_new
@@ -400,6 +408,7 @@ class Bot_Net:
 				
 		change = math.sqrt(dx**2 + dy**2 + dtheta**2)
 		condn = self.event_trigger_vel
+		self.count_WiFi = self.count_WiFi + 1.0
 		if change > condn:
 			while uartBusy:
 				print "Busy for Vel"				
@@ -432,7 +441,8 @@ class Bot_Net:
 			x_new = data.x
 			y_new = data.y
 			theta_new = data.theta
-			condn = self.event_trigger_movement
+			condn = self.event_trigger_movement 
+			self.count_WiFi = self.count_WiFi + 1.0
 		#If Twist is to be transmitted
 		elif dataType == 2:
 			strType = 'Velocity'

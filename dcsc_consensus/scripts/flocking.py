@@ -40,7 +40,8 @@ class Flocking:
 			self.Lmin = 3*self.Num_of_Bots*self.Rob_diam/(2*math.pi)
 		self.dx = 0
 		self.dy = 0
-		self.botCount = 0		#To keep track of bot poses counted
+		self.botCount = 0		
+		#To keep track of bot poses counted
 		self.pos_updated = [0]*self.Num_of_Bots
 		self.bot_data = []
 		for i in range(self.Num_of_Bots):
@@ -93,9 +94,10 @@ class Flocking:
 		while not rospy.is_shutdown():
 			while not self.start:
 				pass
-			time.sleep(0.5*self.Num_of_Bots)
+			#time.sleep(0.5*self.Num_of_Bots)
 			#Update the state
-			self.state = np.mean(self.states,axis=0)			
+			self.state = self.calc_centre()
+			#self.state = np.mean(self.states,axis=0)			
 			self.states = np.array([self.state])
 			
 			self.flock_pose()
@@ -117,6 +119,17 @@ class Flocking:
 			self.pubFlock.publish(pose)		
 			self.pubCent.publish(flock_cent)
 			self.rate.sleep()
+	
+	def calc_centre(self):
+		n = sum(self.pos_updated)
+		pos_sum = [0.0]*3
+		for i in range(self.Num_of_Bots):
+			if self.pos_updated[i] == 1:
+				pos_sum[0] = pos_sum[0] + self.bot_data[i][1]  
+				pos_sum[1] = pos_sum[1] + self.bot_data[i][2]
+				pos_sum[2] = pos_sum[2] + self.bot_data[i][3]
+		pos_sum = [x/n for x in pos_sum]
+		return pos_sum
 
 	def flock_pose(self):
 		theta = 2*math.pi/self.Num_of_Bots
@@ -177,15 +190,17 @@ class Flocking:
 				print "Yaaaaaay!!"
 		else: 
 			self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
-		self.start = True
 		self.botCount = self.botCount+1;
 		rospy.loginfo("State is:"+str(self.states))
 		nodeIndex = node-1
+
+		self.bot_data[nodeIndex][1] = message.x
+		self.bot_data[nodeIndex][2] = message.y
+		self.bot_data[nodeIndex][3] = message.theta
+
 		if self.pos_updated[nodeIndex] == 0:
-			self.bot_data[nodeIndex][1] = message.x
-			self.bot_data[nodeIndex][2] = message.y
-			self.bot_data[nodeIndex][3] = message.theta
-			self.pos_updated[nodeIndex] = 1
+			self.pos_updated[nodeIndex] = 1   
+		self.start = True
 
 	
 	def setID(self, botID):
@@ -195,4 +210,6 @@ class Flocking:
 if __name__ == '__main__':
     try:
         f = Flocking()
-    except rospy.ROSInterruptException: pass
+    except rospy.ROSInterruptException, KeyboardInterrupt:
+		print "Ending Program!!!!!!"
+		sys.exit(1)		

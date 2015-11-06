@@ -67,6 +67,11 @@ def tinyROS():
 	if(len(sys.argv) < 4):
 		test = subprocess.Popen(['motelist| grep "/dev/ttyUSB"'], stdout=subprocess.PIPE, shell = True)
 		output = test.communicate()[0].split("\n")
+		print len(output)
+		if (len(output) > 2 and int(sys.argv[2])!=0):
+			base_index = output[1].find("/dev/ttyUSB")
+		else:
+			base_index = output[0].find("/dev/ttyUSB")
 		base_index = output[0].find("/dev/ttyUSB")
 		dev = output[0][base_index:base_index+12]
 		

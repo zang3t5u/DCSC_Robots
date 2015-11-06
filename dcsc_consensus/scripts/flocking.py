@@ -13,7 +13,7 @@ import math
 
 from numpy.matlib import *
 from std_msgs.msg import *
-from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Pose2D, Twist
 from dcsc_consensus.msg import bot_data_msg
 
 class Flocking:
@@ -49,6 +49,9 @@ class Flocking:
 			self.bot_data[i][0] = i+1
 		
 		self.bot_form_poses = []
+		self.x = [float("infinity")]*2
+		self.x.append(0)
+
 		for i in range(self.Num_of_Bots):
 			self.bot_form_poses.append([float("infinity")]*3)
 		
@@ -73,6 +76,7 @@ class Flocking:
 		#PubSub
 		self.pubFlock = rospy.Publisher('flocking_offset', Pose2D, queue_size = 50)
 		self.pubCent = rospy.Publisher('flocking_centre', Pose2D, queue_size = 50)
+		self.pubVel = rospy.Publisher('cmd_vel', Twist, queue_size = 50)
 		self.subID = rospy.Subscriber('botID',Int32,self.setID)	
 
 		self.subPoses = []
@@ -101,6 +105,7 @@ class Flocking:
 			self.states = np.array([self.state])
 			
 			self.flock_pose()
+			
 			#Define the message
 			pose = Pose2D()
 			pose.x = self.dx
@@ -118,6 +123,12 @@ class Flocking:
 			#Publish
 			self.pubFlock.publish(pose)		
 			self.pubCent.publish(flock_cent)
+			
+			res = self.move(flock_cent, pose)
+			vel = Twist()
+			vel.linear.x = res[0]
+			vel.angular.z = res[1]
+			self.pubVel.publish(vel)
 			self.rate.sleep()
 	
 	def calc_centre(self):
@@ -180,8 +191,14 @@ class Flocking:
 			if (i==self.botID-1):
 				self.dx = offsets[AssignToBot[i]][0]
 				self.dy = offsets[AssignToBot[i]][1]
-
 	
+	def move(self, flock_cent, offset_pose):
+		self.xg = self.bot_form_poses[self.botID-1]
+		w = self.x[2] - math.atan((self.xg[1] - self.x[1]) / (self.xg[0] - self.x[0]))
+		v = self.k[0]*(math.sqrt((self.xg[1] - self.x[1])**2+(self.xg[0] - self.x[0])**2))
+		rospy.loginfo("V: "+str(v)+" W: "+str(w))
+		return [v,w]
+
 	def listen(self,message, node):
 		#rospy.loginfo('message received')
 		if not self.start:
@@ -200,6 +217,10 @@ class Flocking:
 
 		if self.pos_updated[nodeIndex] == 0:
 			self.pos_updated[nodeIndex] = 1   
+		if self.botID == node:
+			self.x[0] = message.x
+			self.x[1] = message.y
+			self.x[2] = message.theta
 		self.start = True
 
 	

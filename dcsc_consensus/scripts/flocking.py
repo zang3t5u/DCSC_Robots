@@ -194,7 +194,7 @@ class Flocking:
 	
 	def move(self, flock_cent, offset_pose):
 		self.xg = self.bot_form_poses[self.botID-1]
-		w = self.x[2] - math.atan((self.xg[1] - self.x[1]) / (self.xg[0] - self.x[0]))
+		w = math.atan((self.xg[1] - self.x[1]) / (self.xg[0] - self.x[0]))-self.x[2]
 		v = self.k[0]*(math.sqrt((self.xg[1] - self.x[1])**2+(self.xg[0] - self.x[0])**2))
 		rospy.loginfo("V: "+str(v)+" W: "+str(w))
 		return [v,w]

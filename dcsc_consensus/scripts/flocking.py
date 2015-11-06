@@ -193,7 +193,7 @@ class Flocking:
 	
 	def move(self, flock_cent, offset_pose):
 		self.xg = self.bot_form_poses[self.botID-1]
-		self.xg[2] = flock_cent[2]
+		self.xg[2] = flock_cent.theta
 		rospy.loginfo("Goal:    "+str(self.xg))
 		rospy.loginfo("Current: "+str(self.x))
 		w = math.atan((self.xg[1] - self.x[1]) / (self.xg[0] - self.x[0]))-self.x[2]

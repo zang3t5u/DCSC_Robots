@@ -125,13 +125,14 @@ class Flocking:
 			#Publish
 			self.pubFlock.publish(pose)		
 			self.pubCent.publish(flock_cent)
-			
+			'''
 			res = self.move(flock_cent, pose)
 			vel = Twist()
 			vel.linear.x = self.satmin(res[0], 0.01)
 			vel.angular.z = self.satmin(res[1], 0.05)
 			rospy.loginfo("V: "+str(vel.linear.x)+" W: "+str(vel.angular.z))
 			self.pubVel.publish(vel)
+			'''
 			self.rate.sleep()
 	
 	def satmin(self,val,valmin):

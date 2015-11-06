@@ -125,10 +125,17 @@ class Flocking:
 			
 			res = self.move(flock_cent, pose)
 			vel = Twist()
-			vel.linear.x = res[0]
-			vel.angular.z = res[1]
+			vel.linear.x = self.satmin(res[0], 0.01)
+			vel.angular.z = self.satmin(res[1], 0.05)
+			rospy.loginfo("V: "+str(vel.linear.x)+" W: "+str(vel.angular.z))
 			self.pubVel.publish(vel)
 			self.rate.sleep()
+	
+	def satmin(self,val,valmin):
+		if(val < valmin and val > -valmin):
+			return 0
+		else:
+			return val
 	
 	def calc_centre(self):
 		n = sum(self.pos_updated)
@@ -196,9 +203,13 @@ class Flocking:
 		self.xg[2] = flock_cent.theta
 		rospy.loginfo("Goal:    "+str(self.xg))
 		rospy.loginfo("Current: "+str(self.x))
-		w = math.atan((self.xg[1] - self.x[1]) / (self.xg[0] - self.x[0]))-self.x[2]
+		if(self.xg[0]!=self.x[0]):
+			w = math.atan((self.xg[1] - self.x[1]) / (self.xg[0] - self.x[0])) - self.x[2]
+		elif (self.xg[1] - self.x[1])>0.01:
+			w = math.pi/2.0 - self.x[2]
+		else:
+			w = self.xg[2] - self.x[2]
 		v = self.k[0]*(10*math.sqrt((self.xg[1] - self.x[1])**2+(self.xg[0] - self.x[0])**2))
-		rospy.loginfo("V: "+str(v)+" W: "+str(w))
 		return [v,w]
 
 	def listen(self,message, node):

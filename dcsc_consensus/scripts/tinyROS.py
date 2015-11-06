@@ -70,7 +70,7 @@ def tinyROS():
 		print len(output)
 		if (len(output) > 2 and int(sys.argv[2])!=0):
 			base_index = output[1].find("/dev/ttyUSB")  
-			dev = output[0][base_index:base_index+12]
+			dev = output[1][base_index:base_index+12]
 		else:
 			base_index = output[0].find("/dev/ttyUSB")
 			dev = output[0][base_index:base_index+12]

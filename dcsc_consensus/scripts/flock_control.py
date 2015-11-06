@@ -107,7 +107,7 @@ class Controller:
 			v = res.x[0:self.Nc] 
 			w = res.x[self.Nc:2*self.Nc]
 			
-			v, w = self.avoid(v,w)
+			#v, w = self.avoid(v,w)
 
 			#Define error to VL
 			e = (self.xl[0]+self.dl[0]-self.x[0])**2+(self.xl[1]+self.dl[1]-self.x[1])**2

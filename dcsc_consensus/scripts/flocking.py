@@ -81,7 +81,7 @@ class Flocking:
 		self.subPoses = []
 		for i in range(self.Num_of_Bots):		
 			if i != self.botID-1:
-				pose_topic_name = 'create'+str(i+1)+'/ground_pose'
+				pose_topic_name = '/create'+str(i+1)+'/ground_pose'
 			else:
 				pose_topic_name = 'ground_pose'
 			self.subPoses.append(rospy.Subscriber(pose_topic_name, Pose2D, self.listen, callback_args = (i+1))) 

@@ -121,8 +121,8 @@ def tinyROS():
 	pubVels = []
 	for i in range(Num_of_Bots):		
 		if i != botID-1:
-			pose_topic_name = 'create'+str(i+1)+'/ground_pose'
-			vel_topic_name = 'create'+str(i+1)+'/cmd_vel'
+			pose_topic_name = '/create'+str(i+1)+'/ground_pose'
+			vel_topic_name = '/create'+str(i+1)+'/cmd_vel'
 		else:
 			pose_topic_name = 'ground_pose'
 			vel_topic_name = 'cmd_vel'

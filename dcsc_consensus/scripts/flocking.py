@@ -34,6 +34,8 @@ class Flocking:
 		self.botID = int(sys.argv[2])
 		self.FormationID = int(sys.argv[3])
 		self.Num_of_Bots = int(sys.argv[1])
+		self.parent_topic = '/create'+str(self.botID)+'/'
+
 		if(self.Num_of_Bots <= math.pi):
 			self.Lmin = 3*self.Rob_diam/2;
 		else:
@@ -41,6 +43,9 @@ class Flocking:
 		self.dx = 0
 		self.dy = 0
 		self.botCount = 0		
+		self.set_offset = False
+		self.calculated_offset = False
+
 		#To keep track of bot poses counted
 		self.pos_updated = [0]*self.Num_of_Bots
 		self.bot_data = []
@@ -65,7 +70,7 @@ class Flocking:
 		self.xl = array([0,0]).T
 
 		#Create rosnode
-		rospy.init_node('Flocking_Pose')
+		rospy.init_node('Flocking_Control')
 		self.rate = rospy.Rate(5)
 
 		#Listening states
@@ -111,8 +116,10 @@ class Flocking:
 			pose.y = self.dy
 			pose.theta = 0 
 
-			rospy.set_param('offset_x', self.dx)
-			rospy.set_param('offset_y', self.dy)
+			if self.set_offset == False and self.calculated_offset == True:			
+				rospy.set_param('offset_x', self.dx)
+				rospy.set_param('offset_y', self.dy)
+				self.set_offset = True
 
 			flock_cent = Pose2D()
 			flock_cent.x = self.state[0]
@@ -206,6 +213,7 @@ class Flocking:
 			if (i==self.botID-1):
 				self.dx = offsets[AssignToBot[i]][0]
 				self.dy = offsets[AssignToBot[i]][1]
+				self.calculated_offset = True
 	
 	def move(self, flock_cent, offset_pose):
 		

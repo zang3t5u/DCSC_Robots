@@ -1,0 +1,21 @@
+<launch>
+
+	<group ns="Robot_3">
+		<node pkg="create_gazebo" name="reroute" type="reroute.py">
+			<param name="botID" value="3"/>
+		</node>
+	</group>
+
+	<group ns="Robot_4">
+		<node pkg="create_gazebo" name="reroute" type="reroute.py">
+			<param name="botID" value="4"/>
+		</node>
+	</group>
+
+	<group ns="Robot_5">
+		<node pkg="create_gazebo" name="reroute" type="reroute.py">
+			<param name="botID" value="5"/>
+		</node>
+	</group>
+
+</launch>

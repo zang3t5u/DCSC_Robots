@@ -1,0 +1,10 @@
+#!/bin/sh
+cd ~/Downloads/mobile_ws/src/create_gazebo/src &&
+. gazebo_spawn_script
+cd ~/Downloads/mobile_ws && 
+. devel/setup.bash &&
+roslaunch dcsc_consensus flocking.launch |
+roslaunch dcsc_consensus flock_control.launch|
+rostopic pub /create3/ground_pose geometry_msgs/Pose2D -1 '{x: 0.024580, y: 1.51068, theta: -0.056}' &&
+rostopic pub /create4/ground_pose geometry_msgs/Pose2D -1 '{x: -0.05080, y: -1.8377, theta: 0.1100}' &&
+rostopic pub /create5/ground_pose geometry_msgs/Pose2D -1 '{x: -0.03400, y: -0.4658, theta: -0.100}'

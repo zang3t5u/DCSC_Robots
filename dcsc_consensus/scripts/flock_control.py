@@ -64,7 +64,7 @@ class Controller:
 		#else:
 		self.sub_pos = rospy.Subscriber('ground_pose',Pose2D,self.ground)
 
-		self.sub_goal = rospy.Subscriber('flocking_centre',Pose2D,self.goal)		
+		self.sub_goal = rospy.Subscriber('/goal',Pose2D,self.goal)		
 		self.sub_leader = rospy.Subscriber('flocking_centre',Pose2D,self.leader)
 		self.sub_relative_pose = rospy.Subscriber('flocking_offset',Pose2D,self.rpose)
 
@@ -112,7 +112,7 @@ class Controller:
 
 			#Define error to VL
 			e = (self.xl[0]+self.dl[0]-self.x[0])**2+(self.xl[1]+self.dl[1]-self.x[1])**2
-			if e > 0.01:			
+			if e > 0.05:			
 				twist.linear.x = self.satmin(v,0.01)
 				twist.angular.z = self.satmin(w,0.05)
 			else:

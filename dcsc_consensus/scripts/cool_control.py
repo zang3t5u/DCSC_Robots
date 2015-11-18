@@ -202,13 +202,14 @@ class Controller:
 				wobst = 0
 			xobst2 = xobst1 + self.dt * array([cos(xobst1[2])*vobst,sin(xobst1[2])*vobst,wobst]).T
 
-			if sqrt((xobst2[0]-x2[0])**2+(xobst2[1]-x2[1])**2) < 0.75:
+			#if (sqrt((xobst2[0]-x2[0])**2+(xobst2[1]-x2[1])**2) < 0.5) or (sqrt((xobst1[0]-x1[0])**2+(xobst1[1]-x1[1])**2) < 0.75):
+			if (sqrt((xobst2[0]-x2[0])**2+(xobst2[1]-x2[1])**2) < 0.75):
 				rospy.loginfo('Too close to bot '+str(node+1))
 				#return v / 2, w + pi
 
 				u = array([[0,-1],[1,0]]).dot(xdot)
 				u = array([[cos(self.x[2]),sin(self.x[2])],[-sin(self.x[2])/d,cos(self.x[2])/d]]).dot(u)
-				u = array([[1e16, 0],[0, 1]]).dot(u)
+				u = array([[1e16, 0],[0, 1.5]]).dot(u)
 				rospy.loginfo("Old: "+str(xdot))
 				rospy.loginfo("New: "+str(u))
 				#eR2R1 = x2 - x1
@@ -224,7 +225,7 @@ class Controller:
 				
 				#u = array([[cos(self.x[2]),sin(self.x[2])],[-sin(self.x[2])/d,cos(self.x[2])/d]]).dot(rR2R1)
 							
-				return max(-0.5, min(u[0], 1)), u[1]
+				return max(-0.4, min(u[0], 0.4)), u[1]
 
 		return v, w
 	

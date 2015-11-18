@@ -22,47 +22,42 @@ class Rerouting:
 		
 		#Create rosnode
 		rospy.init_node('Gazebo_To_Pose')
-		self.rate = rospy.Rate(5)
+		self.rate = rospy.Rate(10)
 
-		self.botID = rospy.get_param('~botID', 0)
-		
+		self.botID = rospy.get_param('~botID', 3)
+
+		self.name = 'create'+str(self.botID)
+
 		#PubSub
-		self.pubPose = rospy.Publisher('/Robot_'+str(self.botID)+'/ground_pose', Pose2D, queue_size = 50)
+		self.pubPose = rospy.Publisher('/Robot_'+str(self.botID)+'/ground_pose', Pose2D, queue_size = 10)
 		self.subTopic = rospy.Subscriber('/gazebo/model_states',ModelStates,self.reroute)	
 
 		rospy.loginfo("Rerouting")
+		#self.pose = Pose2D()
+		#self.pose.x = float('infinity')
+		#self.pose.y = float('infinity')
+		#self.pose.theta = 0
 		self.pose = Pose2D()
-		self.pose.x = float('infinity')
-		self.pose.y = float('infinity')
-		self.pose.theta = 0
-		
-		self.talk()
-
-	def talk(self):
-
-		while not rospy.is_shutdown():
-			
-			#Define the message
-			print 'HEHE'
-			rospy.loginfo("Pose: "+str(self.pose))
-
-			#Publish
-			self.pubPose.publish(self.pose)		
-			self.rate.sleep()
+		while not rospy.is_shutdown():	
+			self.pubPose.publish(self.pose)
+			self.rate.sleep()	
+			pass
 	
 	def reroute(self, ModelStates):
-		self.name = 'create'+str(self.botID)
-		self.pose = Pose2D()
+		
 		for i in range(len(ModelStates.name)):
-			if ModelStates.name[i] == self.name:
-				
-				self.pose.x = ModelStates.pose[i].position.x
-				self.pose.y = ModelStates.pose[i].position.y
+			if ModelStates.name[i] == self.name:				
 				
 				quaternion = (ModelStates.pose[i].orientation.x, ModelStates.pose[i].orientation.y, ModelStates.pose[i].orientation.z, ModelStates.pose[i].orientation.w)
 				euler = tf.transformations.euler_from_quaternion(quaternion)
-				
+
+				self.pose.x = ModelStates.pose[i].position.x
+				self.pose.y = ModelStates.pose[i].position.y
 				self.pose.theta = (euler[2]+np.pi)%(2*np.pi)-np.pi
+
+				rospy.loginfo(self.pose)
+
+				#print ModelStates.name[i]
 				#print ModelStates.pose[i].orientation.y 
 
 

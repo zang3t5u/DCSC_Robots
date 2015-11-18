@@ -1,0 +1,5 @@
+#!/bin/sh
+rostopic pub /flocking_centre geometry_msgs/Pose2D -r 10 '{x: 0, y: -1, theta: 0}'|
+rostopic pub /create3/flocking_offset geometry_msgs/Pose2D -r 10 '{x: 1, y: 0, theta: 0}'|
+rostopic pub /create4/flocking_offset geometry_msgs/Pose2D -r 10 '{x: -1, y: 0, theta: 0}'|
+rostopic pub /create5/flocking_offset geometry_msgs/Pose2D -r 10 '{x: 0, y: 1, theta: 0}'

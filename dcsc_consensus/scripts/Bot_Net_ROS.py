@@ -49,7 +49,7 @@ class Bot_Net:
 		
 		#Displacement for broadcasting new position		
 		self.event_trigger_movement = 0.1;
-		self.event_trigger_angle = math.pi/10;
+		self.event_trigger_angle = 0.05;
 		self.event_trigger_vel = 0.05;
 		self.event_trigger_consensus = 0.05;
 		
@@ -467,7 +467,7 @@ class Bot_Net:
 		print "Bot Update"
 		change = math.sqrt(dx**2 + dy**2 + dtheta**2)
 
-		if change > condn or (dataType==2 and x_new == 0 and not bot_stopped_broadcast):
+		if change > condn or abs(dtheta) > self.event_trigger_angle or (dataType==2 and x_new == 0 and not bot_stopped_broadcast):
 			rospy.loginfo('Broadcasting new Values of ' + strType)
 			while uartBusy:
 				print "hehe"

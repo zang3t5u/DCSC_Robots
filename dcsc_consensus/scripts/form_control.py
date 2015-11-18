@@ -64,8 +64,8 @@ class Controller:
 		#else:
 		self.sub_pos = rospy.Subscriber('ground_pose',Pose2D,self.ground)
 
-		self.sub_goal = rospy.Subscriber('/goal',Pose2D,self.goal)		
-		self.sub_leader = rospy.Subscriber('flocking_centre',Pose2D,self.leader)
+		self.sub_goal = rospy.Subscriber('flocking_centre',Pose2D,self.goal)		
+		#self.sub_leader = rospy.Subscriber('',Pose2D,self.leader)
 		self.sub_relative_pose = rospy.Subscriber('flocking_offset',Pose2D,self.rpose)
 
 		#Listen to other robot positions
@@ -101,6 +101,8 @@ class Controller:
 			#Define the Twist
 			twist = Twist()
 			while not self.start:
+				dx = rospy.get_param('offset_x',0)
+				dy = rospy.get_param('offset_y',0)
 				pass
 			#Run minimization (temporarily follow the target directly)
 			res = minimize(self.cost,self.u0,args=(self.x,self.xl,self.xr),method='SLSQP',bounds=self.bnds,tol=1E-3,options={'maxiter': 20,'disp': False})
@@ -120,7 +122,9 @@ class Controller:
 				twist.angular.z = 0
 
 			#Update the Virtual Leader state (to be added later with consensus)
-			#self.xl = self.xl + self.dt * self.k * (self.xr - self.xl)		
+			self.al = arctan2(self.xr[1] - self.xl[1], self.xr[0] - self.xl[0])				
+			self.xl = self.xl + self.dt * self.k * (self.xr - self.xl)	
+			
 			#rospy.loginfo(self.xl)	
 
 			#Publish and sleep

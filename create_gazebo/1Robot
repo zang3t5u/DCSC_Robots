@@ -1,0 +1,1 @@
+rosrun gazebo_ros spawn_model -file ~/Downloads/mobile_ws/src/create_description_basic/sdf/create.sdf -sdf -x -0.03400 -y -0.4658 -Y -0.100 -model create5 -robot_namespace create5 -wait

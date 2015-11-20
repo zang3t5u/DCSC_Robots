@@ -1,4 +1,41 @@
 #!/usr/bin/env python
+# Software License Agreement (BSD License)
+# 
+# Copyright (c) 2015, TU Delft
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Revision $Id$
+# Author: Maitreya J Naik
+# email: maitreyanaik@gmail.com
+# WebSite: maitreyanaik.wordpress.com
+#---------------------------------------------------------------------
 
 import os
 import sys
@@ -46,13 +83,24 @@ class Bot_Net:
 	def __init__(self, motestring, Num_of_Bots, botID):
 		
 		global NBots, send_queue_size
-		
-		#Displacement for broadcasting new position		
+		#***************************************************************************************
+		#***************************************************************************************
+		#------------------------------------------------------
+		#Add more event_trigger conditions for each topic below as:
+		# self.event_trigger_<new_topic> = min_value_for_transmission;
+		#------------------------------------------------------
+		#Condition for broadcasting new values
+		Num_Data = 5	#increase by 1 when adding new topics
+
 		self.event_trigger_movement = 0.1;
 		self.event_trigger_angle = 0.05;
 		self.event_trigger_vel = 0.05;
-		self.event_trigger_consensus = 0.05;
-		
+		self.event_trigger_offset = 0.0005;
+		self.event_trigger_centre = 0.0005;
+		#------------------------------------------------------
+		#Add more event_trigger conditions for each topic above
+		#------------------------------------------------------
+
 		#Count the Msgs both on WiFi and Zigbee(Event-Triggered)
 		self.count_WiFi = 0.0;
 		self.count_ET = 0.0;
@@ -77,7 +125,7 @@ class Bot_Net:
 		self.discarded = [-1]*(NBots+1)		#Keep count of discarded messages from each source
 		self.bot_data = []
 		for i in range(NBots):
-			self.bot_data.append([0]*10)
+			self.bot_data.append([0]*(1+3*Num_Data))
 			self.bot_data[i][0] = i+1
 
 		#Tracking which Robot values were initialized
@@ -87,8 +135,13 @@ class Bot_Net:
 		#Tracking changes in data to be published for each bot		
 		self.publish_data = [0]*(NBots)
 		'''
-		Index							Data
-		-----							----
+		#***************************************************************************************
+		#***************************************************************************************
+		#------------------------------------------------------
+		# Add more event_trigger conditions for each topic below
+		#-------------------------------------------------------
+		Index								Data
+		-----								----
 		0									ID
 		1									X
 		2									Y
@@ -96,56 +149,29 @@ class Bot_Net:
 		4									VelLinear
 		5									VelAngular
 		6									0
-		7									Leader X
-		8									Leader Y
+		7									Offset X
+		8									Offset Y
 		9									last_update_time
+		10									Centre_X
+		11									Centre_Y
+		12									Centre_Theta
+		13									New_Topic_X
+		14									New_Topic_Y
+		15									New_Topic_Theta
+		#***************************************************************************************
+		#***************************************************************************************
+		#------------------------------------------------------
+		# Add more event_trigger dataTypes for each topic below
+		#-------------------------------------------------------
+		Topic DataType						Topic
+		--------------						----
+		1									Pose
+		2									Velocity
+		3									Offset
+		4									Centre
+		5									New_Topic
 		'''
-		'''
-		#Create Node
-		node_name = 'Bot_Net_Node_'+str(int(botID))
-		print "Starting ROSnode named: ", node_name
-		rospy.init_node(node_name, anonymous=True)
-		rate = rospy.Rate(10) # 10hz
-		#----------------
-		#ROS Publishing
-		#----------------
-		#Publish to all Robot Nodes
-		self.pubPoses = []
-		self.pubVels = []
-		for i in range(Num_of_Bots):		
-			if i != self.botID:
-				pose_topic_name = 'create'+str(i+1)+'/ground_pose'
-				vel_topic_name = 'create'+str(i+1)+'/cmd_vel'
-			else:
-				pose_topic_name = 'ground_pose'
-				vel_topic_name = 'cmd_vel'
-			self.pubPoses.append(rospy.Publisher(pose_topic_name, Pose2D, queue_size=10)) 
-			self.pubVels.append(rospy.Publisher(vel_topic_name, Twist, queue_size=10))
-		self.publish_data = [0]*(NBots)
-		self.publish_dataType = [-1]*(NBots)
 		
-		#----------------
-		#ROS Sunbscribing
-		#----------------
-		#If self is a Central Comp, subscribe to Optitrack data
-		if self.botID == 0:
-			#self.send_msg(self.botID, 1, 1, [500.0, 1400.0, math.pi])
-			####
-			#Get data of which nodes we are connected to
-			self.connected_to = rospy.get_param('~connected_to',[])
-			self.sub_opti = []
-			for node in self.connected_to:
-				self.sub_opti.append(rospy.Subscriber('/Robot_'+str(node)+'/pose',PoseStamped,self.opti, callback_args=(node)))
-			####
-		else:
-		#If self is a Robot then subscribe to only its own pose, vel and consensus		
-			self.subPose = rospy.Subscriber('ground_pose', Pose2D, self.broadcast_new, callback_args = (1))
-			self.subVel = rospy.Subscriber('cmd_vel', Twist, self.broadcast_new, callback_args = (2))
-			self.subCon = rospy.Subscriber('consensus', Pose2D, self.broadcast_new, callback_args = (3))
-		
-		for i in range(Num_of_Bots):
-			rospy.Subscriber('talker'+str(int(botID)), bot_data_msg, self.callback)
-		'''
 		#For TimeSync
 		self.start = False
 		print "Start clock?: ", self.start
@@ -338,7 +364,18 @@ class Bot_Net:
 				print "theta: ", self.bot_data[i][3]
 				print "-------"
 		sys.stdout.flush()
-
+	
+	#***************************************************************************************
+	#***************************************************************************************	
+	#------------------------------------------------------
+	# Add more Central Computer functions for each subscribed event_trigger topic below here:
+	# Use exisitng functions as reference
+	# Function Definition should start as:
+	#	def <new_topic_function>(self, ROS_Msg_Type, node):
+	#	global uartBusy
+	#	send_dataType = <new_topic_dataType>
+	#	botIndex = node-1
+	#-------------------------------------------------------
 	#---------------------------------------------------
 	#	Function opti(self, pose, robot_node_id)
 	#	
@@ -347,6 +384,7 @@ class Bot_Net:
 	#---------------------------------------------------
 	def opti(self,pose, node):
 		global uartBusy
+		send_dataType = 1
 		botIndex = node-1
 		#If using /Robot_i/pose of msg type PoseStamped
 		#quaternion = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
@@ -375,16 +413,17 @@ class Bot_Net:
 			while uartBusy:
 				#print 'Busy'
 				pass
-			print "Sending New for ", node
+			print "Sending New Pose for ", node
 			if DEBUG == True:
 				print "dTheta is ", abs(dtheta), " against ", self.event_trigger_angle
 				print "movement is ", movement, " against ", self.event_trigger_movement
-			msg_was_sent = self.send_msg(self.botID, node, 1, [x_new, y_new, theta_new])
-			self.publish_data[botIndex] = 1
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			self.publish_data[botIndex] = send_dataType
 			if msg_was_sent:
 				self.bot_data[botIndex][1] = x_new
 				self.bot_data[botIndex][2] = y_new
 				self.bot_data[botIndex][3] = theta_new
+
 	#---------------------------------------------------
 	#	Function vel(self, twist, robot_node_id)
 	#	
@@ -393,6 +432,7 @@ class Bot_Net:
 	#---------------------------------------------------
 	def vel(self, twist, node):
 		global uartBusy
+		send_dataType = 2
 		botIndex = node-1
 		x_new = twist.linear.x
 		y_new = twist.angular.z
@@ -411,18 +451,97 @@ class Bot_Net:
 		self.count_WiFi = self.count_WiFi + 1.0
 		if change > condn:
 			while uartBusy:
-				print "Busy for Vel"				
+				#print "Busy for Vel"				
 				pass
-			print "Sending new Vel for ", node
-			msg_was_sent = self.send_msg(self.botID, node, 2, [x_new, y_new, theta_new])
-			self.publish_data[botIndex] = 2
+			print "Sending New Vel for ", node
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			self.publish_data[botIndex] = send_dataType
 			if msg_was_sent:
-				self.bot_data[botIndex][1] = x_new
-				self.bot_data[botIndex][2] = y_new
-				self.bot_data[botIndex][3] = theta_new
-			
+				self.bot_data[botIndex][4] = x_new
+				self.bot_data[botIndex][5] = y_new
+				self.bot_data[botIndex][6] = theta_new
+	
+	#---------------------------------------------------
+	#	Function offset(self, pose, robot_node_id)
+	#	
+	#	Use:
+	#	Listens to connected robot's formation_offset topic and transmits if significant change is given
+	#---------------------------------------------------
+	def offset(self, pose, node):
+		global uartBusy
+		send_dataType = 3
+		botIndex = node-1
+		x_new = pose.x
+		y_new = pose.y
+		theta_new = 0
+
+		x_old = self.bot_data[botIndex][7]  
+		y_old = self.bot_data[botIndex][8] 
+		theta_old = 0
+
+		dx = x_new - x_old
+		dy = y_new - y_old
+		dtheta = theta_new - theta_old
+				
+		change = math.sqrt(dx**2 + dy**2 + dtheta**2)
+		condn = self.event_trigger_offset
+		self.count_WiFi = self.count_WiFi + 1.0
+		if change > condn:
+			while uartBusy:
+				#print "Busy for Offset"				
+				pass
+			print "Sending New Offset for ", node
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			self.publish_data[botIndex] = send_dataType
+			if msg_was_sent:
+				self.bot_data[botIndex][7] = x_new
+				self.bot_data[botIndex][8] = y_new
+				#Preserve time of last update
+				self.bot_data[botIndex][9] = self.bot_data[botIndex][9]
+
+	#---------------------------------------------------
+	#	Function centre(self, pose, robot_node_id)
+	#	
+	#	Use:
+	#	Listens to connected robot's formation_centre topic and transmits if significant change is given
+	#---------------------------------------------------
+	def centre(self, pose, node):
+		global uartBusy
+		send_dataType = 4
+		botIndex = node-1
+		x_new = pose.x
+		y_new = pose.y
+		theta_new = pose.theta
+
+		x_old = self.bot_data[botIndex][10]  
+		y_old = self.bot_data[botIndex][11] 
+		theta_old = self.bot_data[botIndex][12] 
+
+		dx = x_new - x_old
+		dy = y_new - y_old
+		dtheta = theta_new - theta_old
+				
+		change = math.sqrt(dx**2 + dy**2 + dtheta**2)
+		condn = self.event_trigger_centre
+		self.count_WiFi = self.count_WiFi + 1.0
+		if change > condn:
+			while uartBusy:
+				#print "Busy for Centre"				
+				pass
+			print "Sending New Centre for ", node
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			self.publish_data[botIndex] = send_dataType
+			if msg_was_sent:
+				self.bot_data[botIndex][10] = x_new
+				self.bot_data[botIndex][11] = y_new
+				#Preserve time of last update
+				self.bot_data[botIndex][12] = theta_new
 		
-		
+	#***************************************************************************************
+	#***************************************************************************************	
+	#------------------------------------------------------
+	# Add more Robot conditions for each subscribed event_trigger topic below here:
+	#-------------------------------------------------------	
 	#---------------------------------------------------
 	#	Function broadcast_new(self, data, dataType)
 	#	
@@ -436,6 +555,18 @@ class Bot_Net:
 		y_old = self.bot_data[botIndex][2 + 3*(dataType-1)]
 		theta_old = self.bot_data[botIndex][3 + 3*(dataType-1)]
 		strType = ''
+
+		#***************************************************************************************
+		#***************************************************************************************	
+		#------------------------------------------------------
+		# Add more Robot conditions for each subscribed event_trigger topic below here as:
+		#elif dataType == <new_topic_dataType>:
+		#	strType = 'New_Topic'
+		#	x_new = ROS_Msg_Type.data1
+		#	y_new = ROS_Msg_Type.data2
+		#	theta_new = ROS_Msg_Type.data3
+		#	condn = self.event_trigger_<new_topic>
+		#-------------------------------------------------------	
 		#If Pose data is to be updated
 		if dataType == 1:
 			strType = 'Pose'
@@ -454,11 +585,17 @@ class Bot_Net:
 				bot_stopped_broadcast = False;
 			condn = self.event_trigger_vel
 		elif dataType == 3:
-			strType = 'Consensus'
+			strType = 'Offset'
 			x_new = data.x
 			y_new = data.y
 			theta_new = 0
-			condn = self.event_trigger_consensus
+			condn = self.event_trigger_offset
+		elif dataType == 4:
+			strType = 'Centre'
+			x_new = data.x
+			y_new = data.y
+			theta_new = data.theta
+			condn = self.event_trigger_centre
 
 		dx = x_new - x_old
 		dy = y_new - y_old
@@ -466,15 +603,20 @@ class Bot_Net:
 		
 		print "Bot Update"
 		change = math.sqrt(dx**2 + dy**2 + dtheta**2)
-
+		#***************************************************************************************
+		#***************************************************************************************
+		# Edit Transmission condition as needed
+		#---------------------------------------------------------------------------------------
 		if change > condn or abs(dtheta) > self.event_trigger_angle or (dataType==2 and x_new == 0 and not bot_stopped_broadcast):
 			rospy.loginfo('Broadcasting new Values of ' + strType)
 			while uartBusy:
 				print "hehe"
 			self.send_msg(self.botID, 0, dataType, [x_new, y_new, theta_new])
+			t = self.bot_data[botIndex][9]		#Store last update timestamp
 			self.bot_data[botIndex][1 + 3*(dataType-1)]  = x_new
 			self.bot_data[botIndex][2 + 3*(dataType-1)]  = y_new
 			self.bot_data[botIndex][3 + 3*(dataType-1)]  = theta_new
+			self.bot_data[botIndex][9] = t		#Store last update timestamp
 			if dataType==2 and x_new == 0 and not bot_stopped_broadcast:
 				bot_stopped_broadcast = True;
 			
@@ -482,10 +624,9 @@ class Bot_Net:
     def main_loop(self):
     	while 1:
     		time.sleep(1)
-    		# send a message 1's per second
+    		# send a message at 1 Hz
     		self.send_msg()
-'''
-'''
+
 def main():
 	if '-h' in sys.argv or len(sys.argv) < 2:
 		print "Usage:", sys.argv[0], "sf@localhost:9002", "adc_rev_volt <Volt>" 

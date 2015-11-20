@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Software License Agreement (BSD License)
-#
-# Copyright (c) 2008, Willow Garage, Inc.
+# 
+# Copyright (c) 2015, TU Delft
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,9 +32,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # Revision $Id$
-
-## Simple talker demo that published std_msgs/Strings messages
-## to the 'chatter' topic
+# Author: Maitreya J Naik
+# email: maitreyanaik@gmail.com
+# WebSite: maitreyanaik.wordpress.com
+#---------------------------------------------------------------------
 
 #ROS Libraries
 import rospy
@@ -92,6 +93,8 @@ def tinyROS():
 
 	dl = Bot_Net_ROS.Bot_Net(arg, Num_of_Bots, botID)
 
+	#***************************************************************************************
+	#***************************************************************************************
 	#Start ROS Node
 	#Create Node
 	node_name = 'Bot_Net_Node_'+str(int(botID))
@@ -102,13 +105,15 @@ def tinyROS():
 	#----------------
 	#ROS Set Parameters
 	#----------------
-	
 	rospy.set_param('botID', botID)
 	rospy.set_param('Num_of_Bots', Num_of_Bots)
 	bots = [x+1 for x in range(Num_of_Bots)]
 	if(botID!=0):
 		bots.remove(botID)
 	rospy.set_param('connected_to', bots)
+
+	#***************************************************************************************
+	#***************************************************************************************
 	#----------------
 	#ROS Publishing
 	#----------------
@@ -117,20 +122,50 @@ def tinyROS():
 	pubETCount = rospy.Publisher('Count_Event_Msgs', Float64, queue_size=10)
 	pubID = 	rospy.Publisher('botID', Int32, queue_size=10)
 	pubNum = rospy.Publisher('Num_of_Bots', Int32, queue_size = 10)
+	
+	#---------------------------------------------------------------
+	#Add publishing arrays for more event_trigger topics below here as:
+	# pub<NewTopic> = []
+	#---------------------------------------------------------------
 	pubPoses = []
 	pubVels = []
+	pubOffs = []
+	pubCent = []
+	#---------------------------------------------------------------
+	#Add publishing arrays for more event_trigger topics above here
+	#---------------------------------------------------------------
 	for i in range(Num_of_Bots):		
-		if i != botID-1:
-			pose_topic_name = '/create'+str(i+1)+'/ground_pose'
-			vel_topic_name = '/create'+str(i+1)+'/cmd_vel'
-		else:
-			pose_topic_name = 'ground_pose'
-			vel_topic_name = 'cmd_vel'
+		#---------------------------------------------------------------
+		#Add more event_trigger published topic names below here as:
+		#
+		# <newtopic>_topic_name = '/create'+str(i+1)+'/new_topic'
+		#---------------------------------------------------------------
+		pose_topic_name = '/create'+str(i+1)+'/ground_pose'
+		vel_topic_name = '/create'+str(i+1)+'/cmd_vel'
+		offset_topic_name = '/create'+str(i+1)+'/flocking_offset'
+		cent_topic_name = '/flocking_centre'
+		
+		#---------------------------------------------------------------
+		#Add more event_trigger published topic names above here
+		#---------------------------------------------------------------
+
+		#---------------------------------------------------------------
+		#Add more event_trigger published topic arrays below here as:
+		# pub<NewTopic>.append(rospy.Publisher(<newtopic>_topic_name, ROS_Msg_Type, queue_size=10)) 
+		#---------------------------------------------------------------
 		pubPoses.append(rospy.Publisher(pose_topic_name, Pose2D, queue_size=10)) 
 		pubVels.append(rospy.Publisher(vel_topic_name, Twist, queue_size=10))
+		pubOffs.append(rospy.Publisher(offset_topic_name, Pose2D, queue_size=10))
+		pubCent.append(rospy.Publisher(cent_topic_name, Pose2D, queue_size=10))
+		#---------------------------------------------------------------
+		#Add more event_trigger published topic arrays above here
+		#---------------------------------------------------------------
+
 	publish_data = [0]*(Num_of_Bots)
 	publish_dataType = [-1]*(Num_of_Bots)
-	
+
+	#***************************************************************************************
+	#***************************************************************************************	
 	#----------------
 	#ROS Subscribing
 	#----------------
@@ -138,22 +173,54 @@ def tinyROS():
 	if botID == 0:
 		#dl.send_msg(botID, 1, 1, [500.0, 1400.0, math.pi])
 		#Get data of which nodes we are connected to
+		
+		#---------------------------------------------------------------
+		#Add Central Computer subscribing arrays for more event_trigger topics below here as:
+		# sub_<NewTopic> = []
+		#---------------------------------------------------------------
 		sub_opti = []
 		sub_vel = []
+		sub_offset = []
+		sub_goal = []
+		#---------------------------------------------------------------
+		#Add Central Computer subscribing arrays for more event_trigger topics above here
+		#---------------------------------------------------------------
+
 		for node in range(Num_of_Bots):
 			print "Subscribing to Robot ", node+1
+	
+			#---------------------------------------------------------------
+			#Add Central Computer subscribed topics for more event_triggered topics below here as:
+			# sub_<newTopic>.append(rospy.Subscriber('/create'+str(node+1)+'/new_topic',ROS_Msg_Type, dl.<function to be called in Bot_Net_ROS.py> , callback_args=(node+1)))
+			#---------------------------------------------------------------
 			sub_opti.append(rospy.Subscriber('/Robot_'+str(node+1)+'/ground_pose',Pose2D,dl.opti, callback_args=(node+1)))
 			sub_vel.append(rospy.Subscriber('/create'+str(node+1)+'/cmd_vel', Twist, dl.vel, callback_args=(node+1)))
+			sub_offset.append(rospy.Subscriber('/create'+str(node+1)+'/flocking_offset', Pose2D, dl.offset, callback_args=(node+1)))
+			sub_goal.append(rospy.Subscriber('/flocking_centre', Pose2D, dl.centre, callback_args=(node+1)))
 			time.sleep(Bot_Net_ROS.t_interval/1000)
+			#---------------------------------------------------------------
+			#Add more event_trigger subscribed topic arrays above here
+			#---------------------------------------------------------------
 	else:
-	#If dl is a Robot then subscribe to only its own pose, vel and consensus		
+	#If dl is a Robot then subscribe to only its own pose, vel and offset	
 		print "Subscribed"
-		subPose = rospy.Subscriber('ground_pose', Pose2D, dl.broadcast_new, callback_args = (1))
-		subCon = rospy.Subscriber('consensus', Pose2D, dl.broadcast_new, callback_args = (3))
-		subVel = rospy.Subscriber('cmd_vel', Twist, dl.broadcast_new, callback_args = (2))
+
+		#---------------------------------------------------------------
+		#Add Robot event_trigger subscribed topics below here as:
+		# sub<NewTopic> = rospy.Subscriber('new_topic', ROS_Msg_Type, dl.broadcast_new, callback_args = (dataType for this topic, as changed in Bot_Net_ROS.py))
+		#---------------------------------------------------------------
+		subPose = rospy.Subscriber('/create'+str(self.botID)+'ground_pose', Pose2D, dl.broadcast_new, callback_args = (1))
+		subVel = rospy.Subscriber('/create'+str(self.botID)+'cmd_vel', Twist, dl.broadcast_new, callback_args = (2))
+		subOffs = rospy.Subscriber('/create'+str(self.botID)+'flocking_offset', Pose2D, dl.broadcast_new, callback_args = (3))
+		subGoal = rospy.Subscriber('/flocking_centre', Pose2D, dl.broadcast_new, callback_args = (4))
+		#---------------------------------------------------------------
+		#Add Robot event_trigger subscribed topics above here
+		#---------------------------------------------------------------
 
 	sys.stdout.flush()
 
+	#***************************************************************************************
+	#***************************************************************************************
 	while not rospy.is_shutdown():
 		for i in range(Num_of_Bots):
 			'''			
@@ -173,6 +240,19 @@ def tinyROS():
 			count_ET = Float64()
 			count_ET.data = dl.count_ET
 			
+			#***************************************************************************************
+			#***************************************************************************************
+			#---------------------------------------------------------------
+			#Add more event_triggered topic publishing below here as:
+			#elif(dl.publish_data[i]==<new_topic_dataType>):
+			#	rospy.loginfo('Updating Create %d\'s <New_Topic>', i+1)
+			#	msg = ROS_Msg_Type()
+			#	msg.data1 = dl.bot_data[i][1 + 3*(<new_topic_dataType> - 1)]
+			#	msg.data2 = dl.bot_data[i][2 + 3*(<new_topic_dataType> - 1)]
+			# 	msg.data3 = dl.bot_data[i][3 + 3*(<new_topic_dataType> - 1)]
+			#	pub<NewTopic>[i].publish(msg)
+			#	dl.publish_data[i] = 0
+			#---------------------------------------------------------------
 			#Publish Bot Data if event-triggered
 			if(dl.publish_data[i] == 1):		
 				rospy.loginfo('Updating Create %d\'s Pose', i+1)
@@ -181,7 +261,7 @@ def tinyROS():
 				pose.y = dl.bot_data[i][2]
 				pose.theta = dl.bot_data[i][3]
 				pubPoses[i].publish(pose)
-
+				rospy.loginfo('Done for %d', i+1)
 				dl.publish_data[i] = 0
 				
 			elif(dl.publish_data[i]==2):
@@ -192,6 +272,26 @@ def tinyROS():
 				pubVels[i].publish(twist)
 				dl.publish_data[i] = 0
 
+			elif(dl.publish_data[i]==3):
+				rospy.loginfo('Updating Create %d\'s Offsets', i+1)
+				pose = Pose2D()
+				pose.x = dl.bot_data[i][7]
+				pose.y = dl.bot_data[i][8]
+				pose.theta = 0
+				pubOffs[i].publish(pose)
+				dl.publish_data[i] = 0
+
+			elif(dl.publish_data[i]==4):
+				rospy.loginfo('Updating Create %d\'s Centre', i+1)
+				pose = Pose2D()
+				pose.x = dl.bot_data[i][10]
+				pose.y = dl.bot_data[i][11]
+				pose.theta = dl.bot_data[i][12]
+				pubOffs[i].publish(pose)
+				dl.publish_data[i] = 0
+			#---------------------------------------------------------------
+			# Add more event_triggered topic publishing above here
+			#---------------------------------------------------------------
 			pubID.publish(IDdata)	
 			pubNum.publish(Num_of_Bots)		
 			pubWiFiCount.publish(count_WiFi) 

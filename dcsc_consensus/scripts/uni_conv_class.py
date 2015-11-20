@@ -46,7 +46,8 @@ class UniCycle:
 			w = (self.k_w*self.alpha0 + self.gamma_v*sin(2*self.alpha0)*(self.alpha0 + self.h_theta*self.theta0)/(2*self.alpha0))
 		else:
 			w = self.gamma_v*self.h_theta*self.theta0
-		
+		v = min(max(-1, v), 1)
+		w = min(max(-1, w), 1)
 		self.e = self.e_old + self.dt * (-v*(cos(self.alpha0)))
 		if self.e0 != 0:
 			self.alpha = self.alpha_old + self.dt * (-w + v*(sin(self.alpha0))/self.e0)

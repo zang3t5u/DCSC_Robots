@@ -2,5 +2,5 @@
 rosrun gazebo_ros spawn_model -file ~/Downloads/mobile_ws/src/create_description_basic/sdf/create.sdf -sdf -x -0.03400 -y -0.4658 -Y -0.100 -model create5 -robot_namespace create5 -wait|
 sleep 2 &&
 rosrun gazebo_ros spawn_model -file ~/Downloads/mobile_ws/src/create_description_basic/sdf/create.sdf -sdf -x -0.73530 -y 0.20890 -Y -0.040 -model create4 -robot_namespace create4 -wait|
-sleep 4 &&
+sleep 2 &&
 rosrun gazebo_ros spawn_model -file ~/Downloads/mobile_ws/src/create_description_basic/sdf/create.sdf -sdf -x 0.002453 -y 1.51037 -Y -0.002 -model create3 -robot_namespace create3

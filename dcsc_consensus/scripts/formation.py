@@ -20,7 +20,7 @@ class Flocking:
 
 	def __init__(self):
 		if '-h' in sys.argv or len(sys.argv) < 4:
-			print "Usage:", sys.argv[0], "Num_of_Bots", "BotID", "Formation_No"
+			print "Usage:", sys.argv[0], "Max_ID_of_Bots", "BotID", "Formation_No", "Present Bots"
 			print "Formation ID                Formation Description"
 			print "------------                ---------------------"
 			print "     1                               Circle      "
@@ -30,7 +30,7 @@ class Flocking:
 			sys.exit()
 		#Properties
 		self.start = False
-		self.present_bots = 3
+		self.present_Bots = 3
 		
 		self.Rob_diam = 35.0/100.0;	#Robot Diameter in Metres
 		self.botID = int(sys.argv[2])
@@ -39,12 +39,13 @@ class Flocking:
 		self.parent_topic = '/create'+str(self.botID)+'/'
 
 		if(self.Num_of_Bots <= math.pi):
-			self.Lmin = 1.5*self.Rob_diam/2;
+			self.Lmin = 3*self.Rob_diam/2;
 		else:
-			self.Lmin = 1.5*self.Num_of_Bots*self.Rob_diam/(2*math.pi)
+			self.Lmin = 3*self.Num_of_Bots*self.Rob_diam/(2*math.pi)
 		self.dx = 0
 		self.dy = 0
 		#Define the offset message
+		self.flock_cent = Pose2D()
 		self.offset_pose = Pose2D()
 		self.botCount = 0		
 		self.set_offset = False
@@ -58,8 +59,7 @@ class Flocking:
 			self.bot_data[i][0] = i+1
 		
 		self.bot_form_poses = []
-		self.x = [float("infinity")]*2
-		self.x.append(0)
+		self.x = array([float("infinity"), float("infinity"), 0]).T
 		for i in range(self.Num_of_Bots):
 			self.bot_form_poses.append([float("infinity"), float("infinity"), 0])
 		
@@ -67,6 +67,7 @@ class Flocking:
 		self.k = array([0.05,0.05]).T
 		self.kv = array([0.4,0.1]).T
 		self.dt = 0.05
+		self.xgoal = array([0,0, 0]).T
 		self.xr = array([0,0]).T
 		self.xl = array([0,0]).T
 
@@ -75,23 +76,22 @@ class Flocking:
 		self.rate = rospy.Rate(5)
 
 		#Listening states
-		self.state = array([0,0,0])
+		self.state = array([0,0,0]).T
 		self.states = array([[0,0,0]])
 		
 		#PubSub
 		self.pubFlock = rospy.Publisher('/create'+str(self.botID)+'/flocking_offset', Pose2D, queue_size = 50)
-		self.pubCent = rospy.Publisher('/create'+str(self.botID)+'/flocking_centre', Pose2D, queue_size = 50)
-		self.pubVel = rospy.Publisher('/create'+str(self.botID)+'/cmd_vel', Twist, queue_size = 50)
-		self.subID = rospy.Subscriber('/create'+str(self.botID)+'/botID',Int32,self.setID)	
+		self.pubCent = rospy.Publisher('/flocking_centre', Pose2D, queue_size = 50)
 
 		self.subPoses = []
 		for i in range(self.Num_of_Bots):		
-			if i != self.botID-1:
-				pose_topic_name = '/create'+str(i+1)+'/ground_pose'
+			pose_topic_name = '/create'+str(i+1)+'/ground_pose'
+			if i != self.botID-1:			
+				self.subPoses.append(rospy.Subscriber(pose_topic_name, Pose2D, self.listen, callback_args = (i+1))) 
 			else:
-				pose_topic_name = '/create'+str(self.botID)+'/ground_pose'
-			self.subPoses.append(rospy.Subscriber(pose_topic_name, Pose2D, self.listen, callback_args = (i+1))) 
-		
+				self.subPoses.append(rospy.Subscriber(pose_topic_name, Pose2D, self.ground)) 
+			time.sleep(10/1000)
+		self.subCent = rospy.Subscriber('/flocking_centre', Pose2D, self.goal)
 		#Start control loop
 		rospy.loginfo("Flocking initialized.")
 		rospy.loginfo("Node initialized.")
@@ -101,24 +101,22 @@ class Flocking:
 	def talk(self):
 
 		while not rospy.is_shutdown():
-			while not self.start:
-				pass
+			if not self.start:
+				self.rate.sleep()
+				continue
 			#time.sleep(0.5*self.Num_of_Bots)
 			#Update the state
 			self.state = self.calc_centre()
-			if self.botCount > self.present_Bots:
-				self.xr = array([self.state[0],self.state[1]]).T
-			
-			#self.state = np.mean(self.states,axis=0)			
-			#self.states = np.array([self.state])
-			
+			if self.botCount >= self.present_Bots:
+				self.xr = array([self.state[0], self.state[1]]).T
+				
 			#Move the Virtual Leader state (not now)
 			self.xl = self.xl + self.dt * self.k * (self.xr - self.xl)
 			
-			
 			if self.set_offset == False and self.calculated_offset == False:
-				while self.botCount < self.present_Bots:
-					pass
+				if self.botCount < self.present_Bots:
+					self.rate.sleep()
+					continue
 				self.flock_pose()
 				
 				self.offset_pose.x = self.dx
@@ -126,45 +124,29 @@ class Flocking:
 				self.offset_pose.theta = 0 
 				
 				rospy.set_param('~offset_x', self.dx)
-				rospy.set_param('~offset_y', self.dy)				
+				rospy.set_param('~offset_y', self.dy)		
+				#Publish current center and desired orientation as a pose
+
+				self.flock_cent.x = self.state[0]
+				self.flock_cent.y = self.state[1]
+				self.flock_cent.theta = self.state[2]
+
+				rospy.loginfo("Offset: "+str(self.offset_pose))
+				rospy.loginfo("Leader: "+str(self.flock_cent))
+
+				#Publish current leader pose
+				self.pubCent.publish(self.flock_cent)			
 				#Calculate relative pose, once
 				print "Published offset"
 				self.set_offset = True
 
 			#Publish calculated offset continuously
 			self.pubFlock.publish(self.offset_pose)	
-			#Publish current center and desired orientation as a pose
-			flock_cent = Pose2D()
-			flock_cent.x = self.xr[0]
-			flock_cent.y = self.xr[1]
-			flock_cent.theta = 0
-
-			rospy.loginfo("Offset: "+str(self.offset_pose))
-			rospy.loginfo("Leader: "+str(flock_cent))
-
-			#Publish current leader pose
-			self.pubCent.publish(flock_cent)
-
-			self.xg = self.bot_form_poses[self.botID-1]
-			self.xg[2] = flock_cent.theta
+			self.xg = self.xgoal + array([self.bot_form_poses[self.botID-1][0], self.bot_form_poses[self.botID-1][1], 0]).T
 			rospy.loginfo("Goal:    "+str(self.xg))
 			rospy.loginfo("Current: "+str(self.x))
-			'''
-			res = self.move(flock_cent, pose)
-			vel = Twist()
-			vel.linear.x = self.satmin(res[0], 0.01)
-			vel.angular.z = self.satmin(res[1], 0.05)
-			rospy.loginfo("V: "+str(vel.linear.x)+" W: "+str(vel.angular.z))
-			self.pubVel.publish(vel)
-			'''
 			self.rate.sleep()
-	
-	def satmin(self,val,valmin):
-		if(val < valmin and val > -valmin):
-			return 0
-		else:
-			return val
-	
+
 	def calc_centre(self):
 		self.botCount = sum(self.pos_updated)
 		pos_sum = [0.0]*3
@@ -174,10 +156,10 @@ class Flocking:
 				pos_sum[1] = pos_sum[1] + self.bot_data[i][2]
 				pos_sum[2] = pos_sum[2] + self.bot_data[i][3]
 		pos_sum = [x/self.botCount for x in pos_sum]
-		return pos_sum
+		return array([pos_sum[0], pos_sum[1], pos_sum[2]]).T
 
 	def flock_pose(self):
-		theta = 2*math.pi/self.Num_of_Bots
+		theta = 2*math.pi/self.botCount
 		f_dR = [0.0]*self.Num_of_Bots
 		f_dTheta = [0.0]*self.Num_of_Bots
 		f_Position = [[0.0]*2 for i in range(self.Num_of_Bots)]
@@ -193,11 +175,11 @@ class Flocking:
 				f_dTheta[i] = (math.pi/2.0) + (i)*theta
 			#For Column			
 			elif self.FormationID == 2:
-				f_dR[i] = self.Lmin*(math.floor(self.Num_of_Bots/2)-i)
+				f_dR[i] = self.Lmin*(math.floor(self.botCount/2)-i)
 				f_dTheta[i] = math.pi/2.0
 			#For Row
 			elif self.FormationID == 3:
-				f_dR[i] = self.Lmin*(math.floor(self.Num_of_Bots/2)-i)
+				f_dR[i] = self.Lmin*(math.floor(self.botCount/2)-i)
 				f_dTheta[i] = 0
 			#For Wedge
 			elif self.FormationID == 4:
@@ -228,40 +210,39 @@ class Flocking:
 				self.dx = offsets[AssignToBot[i]][0]
 				self.dy = offsets[AssignToBot[i]][1]
 				self.calculated_offset = True
-	
-	def move(self, flock_cent, offset_pose):	
-		w = self.kv[1]*arctan2((self.xg[1] - self.x[1]), (self.xg[0] - self.x[0])) - self.x[2]
-		v = self.kv[0]*(10*math.sqrt((self.xg[1] - self.x[1])**2+(self.xg[0] - self.x[0])**2))
-		return [v,w]
 
-	def listen(self,message, node):
-		#rospy.loginfo('message received')
-		if not self.start:
-			self.states = array([[message.x,message.y,message.theta]])
-			if node == self.botID:
-				print "Yaaaaaay!!"
-		else: 
-			self.states = append(self.states,array([[message.x,message.y,message.theta]]),axis=0)		
-		self.botCount = self.botCount+1;
+	def goal(self, pose):
+		self.xgoal = array([pose.x, pose.y, pose.theta]).T
+
+	def ground(self, message):
+		self.x[0] = message.x
+		self.x[1] = message.y
+		self.x[2] = message.theta
+		
+		self.start = True		
+		node = self.botID
 		rospy.loginfo("Node:"+str(node))
 		nodeIndex = node-1
+		
+		self.bot_data[nodeIndex][1] = message.x
+		self.bot_data[nodeIndex][2] = message.y
+		self.bot_data[nodeIndex][3] = message.theta
 
+		if self.pos_updated[nodeIndex] == 0:
+			self.pos_updated[nodeIndex] = 1  
+
+	def listen(self,message, node):
+		
+		rospy.loginfo("Node:"+str(node))
+		nodeIndex = node-1
+		
 		self.bot_data[nodeIndex][1] = message.x
 		self.bot_data[nodeIndex][2] = message.y
 		self.bot_data[nodeIndex][3] = message.theta
 
 		if self.pos_updated[nodeIndex] == 0:
 			self.pos_updated[nodeIndex] = 1   
-		if self.botID == node:
-			self.x[0] = message.x
-			self.x[1] = message.y
-			self.x[2] = message.theta
-			self.start = True
-
-	
-	def setID(self, botID):
-		self.botID = botID.data
-
+			
 
 if __name__ == '__main__':
     try:

@@ -92,8 +92,8 @@ class Bot_Net:
 		#Condition for broadcasting new values
 		Num_Data = 5	#increase by 1 when adding new topics
 
-		self.event_trigger_movement = 0.1;
-		self.event_trigger_angle = 0.05;
+		self.event_trigger_movement = 0.05;
+		self.event_trigger_angle = 0.02;
 		self.event_trigger_vel = 0.05;
 		self.event_trigger_offset = 0.0005;
 		self.event_trigger_centre = 0.0005;

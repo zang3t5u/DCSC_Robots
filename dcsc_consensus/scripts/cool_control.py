@@ -105,8 +105,9 @@ class Controller:
 			twist = Twist()
 
 			goal = self.xl+self.dl
-			if(norm(self.xl - self.xr) < 0.1):
+			if(norm(array([self.x[0], self.x[1]]).T - (self.xr+self.dl)) < 0.1):
 				goal = np.append(goal, self.xr_theta)
+				rospy.loginfo("Near Goal----------------------------------------------")
 			else:
 				goal = np.append(goal, self.al)
 			
@@ -147,6 +148,7 @@ class Controller:
 			#Publish and sleep
 			rospy.loginfo(self.x)
 			rospy.loginfo('Leader'+str(self.xl))
+			rospy.loginfo('Goal'+str(self.xr))
 			self.pub.publish(twist)		
 			self.rate.sleep()
 
@@ -160,7 +162,10 @@ class Controller:
 		if self.e0 < 0.10 and abs(self.phi)<0.3:
 			rospy.loginfo("Angle: "+str(self.phi))
 			return 0, 0
-		self.theta0 = arctan2(goal[1] - self.state[1], goal[0] - self.state[0]) - goal[2]
+		if self.e0< 0.10:
+			self.theta0 = 0
+		else:
+			self.theta0 = arctan2(goal[1] - self.state[1], goal[0] - self.state[0]) - goal[2]
 		self.theta0 = (self.theta0 + pi) % (2 * pi) - pi
 		#if(self.theta0>)
 		print "Theta: "+str(self.theta0)
@@ -168,7 +173,7 @@ class Controller:
 		self.alpha0 = (self.alpha0 + pi) % (2 * pi) - pi
 		print "Alpha: "+str(self.alpha0)
 
-		if self.e0 > 0.02:
+		if self.e0 > 0.10:
 			v = self.gamma_v*cos(self.alpha0)*self.e0
 		else:
 			v = 0

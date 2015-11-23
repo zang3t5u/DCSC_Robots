@@ -343,7 +343,7 @@ class Controller:
 			#u = array([[cos(self.x[2]),sin(self.x[2])],[-sin(self.x[2])/d,cos(self.x[2])/d]]).dot(rR2R1)
 			#return max(-0.5, min(sign(v)*v/2, 0.5)), max(-1.3, min(u[1], 1.3))	
 		
-			return max(-0.5, min(u[0], 0.5)), max(-2, min(u[1], 2))
+			return max(-0.5, min(u[0], 0.5)), max(-1.3, min(u[1], 1.3))
 
 		return v, w
 

@@ -209,9 +209,9 @@ def tinyROS():
 		#Add Robot event_trigger subscribed topics below here as:
 		# sub<NewTopic> = rospy.Subscriber('new_topic', ROS_Msg_Type, dl.broadcast_new, callback_args = (dataType for this topic, as changed in Bot_Net_ROS.py))
 		#---------------------------------------------------------------
-		subPose = rospy.Subscriber('/create'+str(botID)+'ground_pose', Pose2D, dl.broadcast_new, callback_args = (1))
-		subVel = rospy.Subscriber('/create'+str(botID)+'cmd_vel', Twist, dl.broadcast_new, callback_args = (2))
-		subOffs = rospy.Subscriber('/create'+str(botID)+'flocking_offset', Pose2D, dl.broadcast_new, callback_args = (3))
+		subPose = rospy.Subscriber('/create'+str(botID)+'/ground_pose', Pose2D, dl.broadcast_new, callback_args = (1))
+		subVel = rospy.Subscriber('/create'+str(botID)+'/cmd_vel', Twist, dl.broadcast_new, callback_args = (2))
+		subOffs = rospy.Subscriber('/create'+str(botID)+'/flocking_offset', Pose2D, dl.broadcast_new, callback_args = (3))
 		subGoal = rospy.Subscriber('/flocking_centre', Pose2D, dl.broadcast_new, callback_args = (4))
 		#---------------------------------------------------------------
 		#Add Robot event_trigger subscribed topics above here

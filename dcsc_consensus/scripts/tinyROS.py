@@ -287,7 +287,7 @@ def tinyROS():
 				pose.x = dl.bot_data[i][10]
 				pose.y = dl.bot_data[i][11]
 				pose.theta = dl.bot_data[i][12]
-				pubOffs[i].publish(pose)
+				pubCent[i].publish(pose)
 				dl.publish_data[i] = 0
 			#---------------------------------------------------------------
 			# Add more event_triggered topic publishing above here

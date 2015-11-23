@@ -95,8 +95,8 @@ class Bot_Net:
 		self.event_trigger_movement = 0.05;
 		self.event_trigger_angle = 0.02;
 		self.event_trigger_vel = 0.05;
-		self.event_trigger_offset = 0.0005;
-		self.event_trigger_centre = 0.0005;
+		self.event_trigger_offset = 0.05;
+		self.event_trigger_centre = 0.05;
 		#------------------------------------------------------
 		#Add more event_trigger conditions for each topic above
 		#------------------------------------------------------
@@ -266,7 +266,7 @@ class Bot_Net:
 		
 		if((self.start or (self.botID==0)) and (not uartBusy) and (not recvUART)):
 			uartBusy = True			
-			print "Sending packet ", self.counter
+			#print "Sending packet ", self.counter
 			smsg = Bot_NetMsg.Bot_NetMsg()
 			smsg.set_seqNo(self.counter)
 			smsg.set_send_ID(send_ID)
@@ -280,9 +280,9 @@ class Bot_Net:
 			t = 1000*(time.time()-self.start_time) 
 			cond = int((t%((NBots+1)*t_interval))/t_interval)
 			if((not self.start) and (self.botID == 0)):
-				print "Starting Clock NOW!!!"
+				#print "Starting Clock NOW!!!"
 				self.start_time = time.time()
-				print "at Time: ", self.start_time
+				#print "at Time: ", self.start_time
 				self.recv_seqNo = [-1]*(NBots+1)
 				self.discarded = [-1]*(NBots+1)
 				self.start = True 
@@ -311,7 +311,7 @@ class Bot_Net:
 
 				#Increment Event triggered count
 				self.count_ET = self.count_ET + 1.0
-				print "Gaya"
+				#print "Gaya"
 			msg_was_sent = True
 			uartBusy = False
 			self.counter+=1
@@ -593,6 +593,7 @@ class Bot_Net:
 			x_new = data.x
 			y_new = data.y
 			theta_new = 0
+			theta_old = 0
 			condn = self.event_trigger_offset
 		elif dataType == 4:
 			strType = 'Centre'

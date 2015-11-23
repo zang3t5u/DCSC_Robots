@@ -413,11 +413,12 @@ class Bot_Net:
 			while uartBusy:
 				#print 'Busy'
 				pass
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			print "Sending New Pose for ", node
 			if DEBUG == True:
 				print "dTheta is ", abs(dtheta), " against ", self.event_trigger_angle
 				print "movement is ", movement, " against ", self.event_trigger_movement
-			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			
 			self.publish_data[botIndex] = send_dataType
 			if msg_was_sent:
 				self.bot_data[botIndex][1] = x_new
@@ -453,8 +454,9 @@ class Bot_Net:
 			while uartBusy:
 				#print "Busy for Vel"				
 				pass
-			print "Sending New Vel for ", node
 			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			print "Sending New Vel for ", node
+			
 			self.publish_data[botIndex] = send_dataType
 			if msg_was_sent:
 				self.bot_data[botIndex][4] = x_new
@@ -490,8 +492,9 @@ class Bot_Net:
 			while uartBusy:
 				#print "Busy for Offset"				
 				pass
-			print "Sending New Offset for ", node
 			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			print "Sending New Offset for ", node
+			
 			self.publish_data[botIndex] = send_dataType
 			if msg_was_sent:
 				self.bot_data[botIndex][7] = x_new
@@ -528,8 +531,9 @@ class Bot_Net:
 			while uartBusy:
 				#print "Busy for Centre"				
 				pass
-			print "Sending New Centre for ", node
 			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			print "Sending New Centre for ", node
+			
 			self.publish_data[botIndex] = send_dataType
 			if msg_was_sent:
 				self.bot_data[botIndex][10] = x_new

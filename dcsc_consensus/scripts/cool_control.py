@@ -120,10 +120,12 @@ class Controller:
 			#w = res.x[self.Nc:2*self.Nc]
 			#v = v[0]
 			#w = w[0]
-			v = min(max(0, v), 1)
+			v = min(max(0, v), 0.2)
+			w = min(max(-0.1, w), 0.1)
 			rospy.loginfo("YE DEKHO!!!!!!!!!!!!!!!!!!!"+str(array([v, w]).T))
 			v, w = self.avoid(v, w)
-			v = min(max(0, v), 0.5)
+			v = min(max(0, v), 0.2)
+			w = min(max(-0.1, w), 0.1)
 			v = self.satmin(v, 0.005)
 			if(v == 0):
 				w = self.satmin(w, 0.01)

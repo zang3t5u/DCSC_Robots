@@ -68,7 +68,7 @@ class Controller:
 
 		#Pubsub
 		self.pub = rospy.Publisher('/create'+str(self.botID)+'/cmd_vel', Twist)
-		self.sub_pos = rospy.Subscriber('/create'+str(self.botID)+'/ground_pose',Pose2D,self.ground)
+		self.sub_pos = rospy.Subscriber('/Robot_'+str(self.botID)+'/ground_pose',Pose2D,self.ground)
 		self.sub_goal = rospy.Subscriber('/flocking_centre',Pose2D,self.goal)		
 		self.sub_relative_pose = rospy.Subscriber('/create'+str(self.botID)+'/flocking_offset',Pose2D,self.relative_pose)
 		
@@ -83,7 +83,7 @@ class Controller:
 		for i in range(self.Num_of_Bots):
 			if i == self.botID-1:
 				continue
-			self.subs.append(rospy.Subscriber('/create'+str(i+1)+'/ground_pose',Pose2D,self.listen_pose,callback_args=(i+1)))
+			self.subs.append(rospy.Subscriber('/Robot_'+str(i+1)+'/ground_pose',Pose2D,self.listen_pose,callback_args=(i+1)))
 			self.subs_vel.append(rospy.Subscriber('/create'+str(i+1)+'/cmd_vel',Twist,self.listen_vel,callback_args=(i+1)))
 			self.xobst[i] = (float('infinity'),float('infinity'), 0)			
 			self.xobst_vel[i] = (float('infinity'),float('infinity'))
@@ -115,12 +115,12 @@ class Controller:
 			#Run unicycle model
 			v, w = self.calc_vel(goal)
 
-			v = min(max(0, v), 0.3)
-			w = min(max(-0.2, w), 0.2)
+			#v = min(max(0, v), 0.5)
+			#w = min(max(-0.2, w), 0.2)
 			rospy.loginfo("YE DEKHO!!!!!!!!!!!!!!!!!!!"+str(array([v, w]).T))
 			v, w = self.avoid(v, w)
-			v = min(max(0, v), 0.3)
-			w = min(max(-0.2, w), 0.2)
+			#v = min(max(0, v), 0.5)
+			#w = min(max(-0.2, w), 0.2)
 			v = self.satmin(v, 0.005)
 			if(v == 0):
 				w = self.satmin(w, 0.01)
@@ -136,6 +136,9 @@ class Controller:
 				twist.angular.z = 0
 				e = 0
 				self.phi = 0
+				#Update the Virtual Leader state (to be added later with consensus)
+				#self.xl = self.xl + self.dt * self.k * (self.xr - self.xl)	
+				#self.al = arctan2(self.xr[1] - self.xl[1], self.xr[0] - self.xl[0])	
 			self.ise = self.ise + (e**2 + self.phi**2)*self.dt
 			ISE_PARAM_NAME = 'Bot'+str(self.botID)
 			rospy.set_param(ISE_PARAM_NAME, float(self.ise))
@@ -143,10 +146,7 @@ class Controller:
 			#Update the Virtual Leader state (to be added later with consensus)
 			self.xl = self.xl + self.dt * self.k * (self.xr - self.xl)	
 			self.al = arctan2(self.xr[1] - self.xl[1], self.xr[0] - self.xl[0])	
-			if norm(self.xl - self.xr) < 0.01:
-				rospy.set_param('Leader_Reached', 1)
-			else:
-				rospy.set_param('Leader_Reached', 0)
+
 			#Update the robot pose
 			#self.x = self.x + self.dt * array([ cos(self.x[2])*twist.linear.x , sin(self.x[2])*twist.linear.x , twist.angular.z ]).T
 			#self.x[2] = (self.x[2] + pi) % (2 * pi) - pi	
@@ -266,7 +266,7 @@ class Controller:
 		rospy.loginfo("Closest robot: "+str(node+1)+" at: "+str(sqrt((xobst1[0]-x1[0])**2+(xobst1[1]-x1[1])**2)-rob_dia))
 
 		#Check if robot is in collision zone of obstacle
-		if (sqrt((xobst2[0]-x2[0])**2+(xobst2[1]-x2[1])**2)-rob_dia < 0.3) or (sqrt((xobst1[0]-x1[0])**2+(xobst1[1]-x1[1])**2)-rob_dia < 0.5):
+		if (sqrt((xobst2[0]-x2[0])**2+(xobst2[1]-x2[1])**2)-rob_dia < 0.2) or (sqrt((xobst1[0]-x1[0])**2+(xobst1[1]-x1[1])**2)-rob_dia < 0.4):
 			#If goal is nearer to bot than obstacle in the next time step, then obstacle won't hinder robot's path
 			if (sqrt((self.xl[0]+self.dl[0]-x1[0])**2+(self.xl[1]+self.dl[1]-x1[1])**2)) < (sqrt((xobst2[0]-x2[0])**2+(xobst2[1]-x2[1])**2) - rob_dia/2):
 				#If robot is moving closer to the goal
@@ -288,26 +288,26 @@ class Controller:
 			#if -1*obst_ang_min < obst_ang and obst_ang <= 0:
 			if abs(obst_ang) <= pi/2 and obst_ang <= 0:
 				rospy.loginfo("Obstacle on Front Right, rotate anti-clockwise")
-				#u = array([[0,-1, 0],[1,0, 0],[0, 0, 0]]).dot(eO1R1)
-				u = array([[-1,0, 0],[0,-1, 0],[0, 0, 0]]).dot(eO1R1)
+				u = array([[0,-1, 0],[1,0, 0],[0, 0, 0]]).dot(eO1R1)
+				#u = array([[-1,0, 0],[0,-1, 0],[0, 0, 0]]).dot(eO1R1)
 				u[2] = pi/2
 				#u[2] = arctan2(u[1], u[0])
 			elif abs(obst_ang) > pi/2 and obst_ang <= 0:
 				rospy.loginfo("Obstacle on Rear Right, rotate clockwise")
-				#u = array([[0,-1, 0],[1,0, 0],[0, 0, 0]]).dot(eO1R1)
-				u = array([[-1,0, 0],[0,-1, 0],[0, 0, 0]]).dot(eO1R1)
+				u = array([[0,-1, 0],[1,0, 0],[0, 0, 0]]).dot(eO1R1)
+				#u = array([[-1,0, 0],[0,-1, 0],[0, 0, 0]]).dot(eO1R1)
 				u[2] = -pi/2
 				#u[2] = arctan2(u[1], u[0])
 			elif abs(obst_ang) <= pi/2 and obst_ang > 0:
 				rospy.loginfo("Obstacle on Front Left, rotate clockwise")
-				#u = array([[0,1, 0],[-1,0, 0],[0, 0, 0]]).dot(eO1R1)
-				u = array([[-1,0, 0],[0,-1, 0],[0, 0, 0]]).dot(eO1R1)
+				u = array([[0,1, 0],[-1,0, 0],[0, 0, 0]]).dot(eO1R1)
+				#u = array([[-1,0, 0],[0,-1, 0],[0, 0, 0]]).dot(eO1R1)
 				u[2] = -pi/2
 				#u[2] = arctan2(u[1], u[0])
 			elif abs(obst_ang) > pi/2 and obst_ang > 0:
 				rospy.loginfo("Obstacle on Rear Left, rotate anti-clockwise")
-				#u = array([[0,1, 0],[-1,0, 0],[0, 0, 0]]).dot(eO1R1)
-				u = array([[-1,0, 0],[0,-1, 0],[0, 0, 0]]).dot(eO1R1)
+				u = array([[0,1, 0],[-1,0, 0],[0, 0, 0]]).dot(eO1R1)
+				#u = array([[-1,0, 0],[0,-1, 0],[0, 0, 0]]).dot(eO1R1)
 				u[2] = pi/2
 				#u[2] = arctan2(u[1], u[0])
 			else:

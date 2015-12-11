@@ -218,7 +218,7 @@ def tinyROS():
 		#---------------------------------------------------------------
 
 	sys.stdout.flush()
-
+	tCount = 0
 	#***************************************************************************************
 	#***************************************************************************************
 	while not rospy.is_shutdown():
@@ -254,7 +254,7 @@ def tinyROS():
 			#	dl.publish_data[i] = 0
 			#---------------------------------------------------------------
 			#Publish Bot Data if event-triggered
-			if(dl.publish_data[i] == 1):		
+			if(dl.publish_data[i] == 1 or dl.publish_data_i[i][0] == 1):		
 				rospy.loginfo('Updating Create %d\'s Pose', i+1)
 				pose = Pose2D()
 				pose.x = dl.bot_data[i][1]
@@ -263,16 +263,18 @@ def tinyROS():
 				pubPoses[i].publish(pose)
 				rospy.loginfo('Done for %d', i+1)
 				dl.publish_data[i] = 0
+				dl.publish_data_i[i][0] = 0 
 				
-			elif(dl.publish_data[i]==2):
+			elif(dl.publish_data[i]==2 or dl.publish_data_i[i][1] == 1):
 				rospy.loginfo('Updating Create %d\'s Vels', i+1)
 				twist = Twist()
 				twist.linear.x = dl.bot_data[i][4]
 				twist.angular.z = dl.bot_data[i][5]
 				pubVels[i].publish(twist)
 				dl.publish_data[i] = 0
+				dl.publish_data_i[i][1] = 0 
 
-			elif(dl.publish_data[i]==3):
+			elif(dl.publish_data[i]==3 or dl.publish_data_i[i][2] == 1):
 				rospy.loginfo('Updating Create %d\'s Offsets', i+1)
 				pose = Pose2D()
 				pose.x = dl.bot_data[i][7]
@@ -280,8 +282,9 @@ def tinyROS():
 				pose.theta = 0
 				pubOffs[i].publish(pose)
 				dl.publish_data[i] = 0
+				dl.publish_data_i[i][2] = 0
 
-			elif(dl.publish_data[i]==4):
+			elif(dl.publish_data[i]==4 or dl.publish_data_i[i][3] == 1):
 				rospy.loginfo('Updating Create %d\'s Centre', i+1)
 				pose = Pose2D()
 				pose.x = dl.bot_data[i][10]
@@ -289,6 +292,12 @@ def tinyROS():
 				pose.theta = dl.bot_data[i][12]
 				pubCent[i].publish(pose)
 				dl.publish_data[i] = 0
+				dl.publish_data_i[i][3] = 0
+			
+			#Count time for each data's last update
+			for j in range(dl.Num_Data):
+				#print "Time for Robot " + str(i) + " Data "+str(j) + " is: "+ str(dl.publish_data_tCount[i][j])
+				dl.publish_data_tCount[i][j] = dl.publish_data_tCount[i][j] + 1; 
 			#---------------------------------------------------------------
 			# Add more event_triggered topic publishing above here
 			#---------------------------------------------------------------

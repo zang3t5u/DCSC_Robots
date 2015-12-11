@@ -90,7 +90,7 @@ class Bot_Net:
 		# self.event_trigger_<new_topic> = min_value_for_transmission;
 		#------------------------------------------------------
 		#Condition for broadcasting new values
-		Num_Data = 5	#increase by 1 when adding new topics
+		self.Num_Data = 5	#increase by 1 when adding new topics
 
 		self.event_trigger_movement = 0.05;
 		self.event_trigger_angle = 0.02;
@@ -125,7 +125,7 @@ class Bot_Net:
 		self.discarded = [-1]*(NBots+1)		#Keep count of discarded messages from each source
 		self.bot_data = []
 		for i in range(NBots):
-			self.bot_data.append([0]*(1+3*Num_Data))
+			self.bot_data.append([0]*(1+3*self.Num_Data))
 			self.bot_data[i][0] = i+1
 
 		#Tracking which Robot values were initialized
@@ -134,6 +134,12 @@ class Bot_Net:
 		
 		#Tracking changes in data to be published for each bot		
 		self.publish_data = [0]*(NBots)
+		self.publish_data_i = []
+		self.publish_data_tCount = []
+		for i in range(NBots):
+			self.publish_data_i.append([0]*(self.Num_Data))	
+			self.publish_data_tCount.append([0]*(self.Num_Data))
+
 		'''
 		#***************************************************************************************
 		#***************************************************************************************
@@ -307,7 +313,7 @@ class Bot_Net:
 					print "Receiving"
 				self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg) 
 				packetCount+=1
-				#time.sleep(t_interval/1000)
+				#time.sleep(.7)
 
 				#Increment Event triggered count
 				self.count_ET = self.count_ET + 1.0
@@ -346,6 +352,7 @@ class Bot_Net:
 		'''
 		#Signal Publisher to update values
 		self.publish_data[botIndex] = dataType;
+		self.publish_data_i[botIndex][dataType] = 1;
 
 		#print " Storing for Robot", msg_bot, "at index: ", botIndex
 		self.bot_data[botIndex][1 + 3*(dataType-1)] = data[0]
@@ -420,6 +427,7 @@ class Bot_Net:
 				print "movement is ", movement, " against ", self.event_trigger_movement
 			
 			self.publish_data[botIndex] = send_dataType
+			self.publish_data_i[botIndex][send_dataType-1] = 1;
 			if msg_was_sent:
 				self.bot_data[botIndex][1] = x_new
 				self.bot_data[botIndex][2] = y_new
@@ -458,6 +466,7 @@ class Bot_Net:
 			print "Sending New Vel for ", node
 			
 			self.publish_data[botIndex] = send_dataType
+			self.publish_data_i[botIndex][send_dataType-1] = 1;
 			if msg_was_sent:
 				self.bot_data[botIndex][4] = x_new
 				self.bot_data[botIndex][5] = y_new
@@ -496,6 +505,7 @@ class Bot_Net:
 			print "Sending New Offset for ", node
 			
 			self.publish_data[botIndex] = send_dataType
+			self.publish_data_i[botIndex][send_dataType-1] = 1;
 			if msg_was_sent:
 				self.bot_data[botIndex][7] = x_new
 				self.bot_data[botIndex][8] = y_new
@@ -534,7 +544,8 @@ class Bot_Net:
 			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			print "Sending New Centre for ", node
 			
-			self.publish_data[botIndex] = send_dataType
+			self.publish_data[botIndex] = send_dataType	
+			self.publish_data_i[botIndex][send_dataType-1] = 1;
 			if msg_was_sent:
 				self.bot_data[botIndex][10] = x_new
 				self.bot_data[botIndex][11] = y_new

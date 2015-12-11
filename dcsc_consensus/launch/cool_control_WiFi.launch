@@ -1,0 +1,18 @@
+<launch>
+
+	<group ns="create5">
+		<node pkg="dcsc_consensus" name="cool_control_WiFi" type="cool_control_WiFi.py" args="5 5">
+		</node>
+	</group>
+	
+	<group ns="create4">
+		<node pkg="dcsc_consensus" name="cool_control_WiFi" type="cool_control_WiFi.py" args="5 4">
+		</node>
+	</group>
+	
+	<group ns="create3">
+		<node pkg="dcsc_consensus" name="cool_control_WiFi" type="cool_control_WiFi.py" args="5 3">
+		</node>
+	</group>
+
+</launch>
